@@ -10,8 +10,8 @@ const twoPlayerSetup = {
 
 describe('createInitialGameState', () => {
   it('creates a deterministic game with players in setup order', () => {
-    const first = createInitialGameState(twoPlayerSetup)
-    const second = createInitialGameState(twoPlayerSetup)
+    const first = createInitialGameState(twoPlayerSetup, () => 0.5)
+    const second = createInitialGameState(twoPlayerSetup, () => 0.5)
 
     expect(first).toEqual(second)
     expect(first.currentPlayerIndex).toBe(0)
@@ -49,7 +49,12 @@ describe('createInitialGameState', () => {
     expect(state.auction).toBeNull()
     expect(state.landingResolution).toBeNull()
     expect(state.dice).toBeNull()
-    expect(state.decks).toEqual({ chance: [], communityChest: [] })
+    expect(state.decks.chance).toHaveLength(16)
+    expect(new Set(state.decks.chance).size).toBe(16)
+    expect(state.decks.communityChest).toHaveLength(16)
+    expect(new Set(state.decks.communityChest).size).toBe(16)
+    expect(state.pendingCard).toBeNull()
+    expect(state.heldJailFreeCards).toEqual([])
     expect(state.log).toEqual([])
     expect(state.phase).toBe('awaiting-roll')
   })

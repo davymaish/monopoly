@@ -3,6 +3,7 @@ import { PLAYER_COLOR_IDS, type PlayerColor, type PlayerCount } from '../setup/c
 import { validateSetup } from '../setup/validation'
 import { createInitialPropertyOwnership } from './ownership'
 import type { GameState, Player } from './model'
+import { createShuffledDecks, type CardRandomSource } from './card-shuffle'
 
 export type { GameState as InitialGameState, Player as InitialPlayer } from './model'
 
@@ -24,7 +25,10 @@ function getGoPosition(): number {
   return goSpace.position
 }
 
-export function createInitialGameState(setup: InitialGameSetup): GameState {
+export function createInitialGameState(
+  setup: InitialGameSetup,
+  randomSource: CardRandomSource = Math.random,
+): GameState {
   const validation = validateSetup({
     playerCount: setup.playerCount,
     playerNames: setup.playerNames,
@@ -65,7 +69,9 @@ export function createInitialGameState(setup: InitialGameSetup): GameState {
     auction: null,
     landingResolution: null,
     dice: null,
-    decks: { chance: [], communityChest: [] },
+    decks: createShuffledDecks(randomSource),
+    pendingCard: null,
+    heldJailFreeCards: [],
     log: [],
     phase: 'awaiting-roll',
   }
