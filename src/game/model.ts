@@ -23,9 +23,22 @@ export interface CardDeckState {
   communityChest: string[]
 }
 
+export type GameLogEvent =
+  | { type: 'roll'; playerId: PlayerId; dice: DiceRoll }
+  | { type: 'movement'; playerId: PlayerId; from: number; to: number; spacesMoved: number }
+  | { type: 'income'; playerId: PlayerId; amount: number; reason: 'go-salary' }
+  | {
+      type: 'payment'
+      payerId: PlayerId
+      payeeId: PlayerId | null
+      amount: number
+      reason: 'rent' | 'tax' | 'property-purchase' | 'card' | 'jail-bail'
+    }
+  | { type: 'turn-change'; fromPlayerId: PlayerId; toPlayerId: PlayerId }
+
 export interface GameLogEntry {
   id: string
-  message: string
+  event: GameLogEvent
 }
 
 export interface GameState {

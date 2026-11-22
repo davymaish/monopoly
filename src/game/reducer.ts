@@ -1,14 +1,23 @@
 import type { GameReducer } from './actions'
+import { appendGameLog } from './log'
+import type { GameLogEvent } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
     case 'roll-dice':
-      if (state.phase !== 'awaiting-roll') {
+      if (state.phase !== 'awaiting-roll' || !state.players[state.currentPlayerIndex]) {
         return state
       }
 
-      return { ...state, dice: action.dice, phase: 'resolving-turn' }
+      return {
+        ...state,
+        dice: action.dice,
+        phase: 'resolving-turn',
+        log: appendGameLog(state.log, [
+          { type: 'roll', playerId: state.players[state.currentPlayerIndex].id, dice: action.dice },
+        ]),
+      }
     case 'move-player': {
       const currentPlayer = state.players[state.currentPlayerIndex]
 
@@ -27,8 +36,31 @@ export const gameReducer: GameReducer = (state, action) => {
             }
           : player,
       )
+      const events: GameLogEvent[] = [
+        {
+          type: 'movement',
+          playerId: currentPlayer.id,
+          from: currentPlayer.position,
+          to: destination,
+          spacesMoved: state.dice[0] + state.dice[1],
+        },
+      ]
 
-      return { ...state, players, phase: 'awaiting-player-action' }
+      if (passesGo) {
+        events.push({
+          type: 'income',
+          playerId: currentPlayer.id,
+          amount: GO_SALARY,
+          reason: 'go-salary',
+        })
+      }
+
+      return {
+        ...state,
+        players,
+        phase: 'awaiting-player-action',
+        log: appendGameLog(state.log, events),
+      }
     }
     case 'end-turn': {
       if (
@@ -41,11 +73,22 @@ export const gameReducer: GameReducer = (state, action) => {
         return state
       }
 
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length
+      const nextPlayer = state.players[nextPlayerIndex]
+
+      if (!currentPlayer || !nextPlayer) {
+        return state
+      }
+
       return {
         ...state,
-        currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
+        currentPlayerIndex: nextPlayerIndex,
         dice: null,
         phase: 'awaiting-roll',
+        log: appendGameLog(state.log, [
+          { type: 'turn-change', fromPlayerId: currentPlayer.id, toPlayerId: nextPlayer.id },
+        ]),
       }
     }
     case 'buy-property':
