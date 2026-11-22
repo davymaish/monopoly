@@ -1,7 +1,8 @@
 import { BOARD_SPACES } from './board'
 import { PLAYER_COLOR_IDS, type PlayerColor, type PlayerCount } from '../setup/config'
 import { validateSetup } from '../setup/validation'
-import type { GameState, Player, PropertyOwnership } from './model'
+import { createInitialPropertyOwnership } from './ownership'
+import type { GameState, Player } from './model'
 
 export type { GameState as InitialGameState, Player as InitialPlayer } from './model'
 
@@ -21,18 +22,6 @@ function getGoPosition(): number {
   }
 
   return goSpace.position
-}
-
-function createInitialOwnership(): PropertyOwnership {
-  const ownership: PropertyOwnership = {}
-
-  for (const space of BOARD_SPACES) {
-    if (space.kind === 'property' || space.kind === 'railroad' || space.kind === 'utility') {
-      ownership[space.id] = null
-    }
-  }
-
-  return ownership
 }
 
 export function createInitialGameState(setup: InitialGameSetup): GameState {
@@ -62,7 +51,6 @@ export function createInitialGameState(setup: InitialGameSetup): GameState {
       color,
       cash: STARTING_CASH,
       position: goPosition,
-      ownedPropertyIds: [],
       getOutOfJailFreeCardCount: 0,
     }
 
@@ -72,7 +60,7 @@ export function createInitialGameState(setup: InitialGameSetup): GameState {
   return {
     players,
     currentPlayerIndex: 0,
-    ownership: createInitialOwnership(),
+    ownership: createInitialPropertyOwnership(),
     dice: null,
     decks: { chance: [], communityChest: [] },
     log: [],
