@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import BoardPerimeter, { getBoardGridCoordinates } from '../components/BoardPerimeter'
 import { BOARD_SPACES } from '../game/board'
@@ -227,5 +227,29 @@ describe('board perimeter', () => {
       '10',
     )
     expect(document.querySelector('.board-center')).toBeInTheDocument()
+  })
+
+  it('renders named player tokens at their positions and clusters players on the same space', () => {
+    render(
+      <BoardPerimeter
+        players={[
+          { id: 'player-1', name: 'Alice', color: 'red', position: 0 },
+          { id: 'player-2', name: 'Blake', color: 'blue', position: 0 },
+          { id: 'player-3', name: 'Casey', color: 'green', position: 5 },
+        ]}
+      />,
+    )
+
+    const goTile = screen.getByRole('listitem', { name: 'GO, space 1' })
+    const railroadTile = screen.getByRole('listitem', { name: 'Reading Railroad, space 6' })
+
+    expect(within(goTile).getAllByRole('img')).toHaveLength(2)
+    expect(within(goTile).getByRole('img', { name: 'Alice token' })).toHaveAttribute(
+      'data-player-id',
+      'player-1',
+    )
+    expect(within(goTile).getByRole('img', { name: 'Blake token' })).toBeInTheDocument()
+    expect(within(railroadTile).getByRole('img', { name: 'Casey token' })).toBeInTheDocument()
+    expect(within(railroadTile).getAllByRole('img')).toHaveLength(1)
   })
 })

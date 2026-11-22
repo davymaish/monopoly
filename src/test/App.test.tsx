@@ -24,6 +24,9 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeInTheDocument()
     expect(screen.getAllByText('$1,500')).toHaveLength(2)
     expect(screen.getByRole('list', { name: 'Monopoly board' })).toBeInTheDocument()
+    const goTile = screen.getByRole('listitem', { name: 'GO, space 1' })
+    expect(within(goTile).getByRole('img', { name: 'Player 1 token' })).toBeInTheDocument()
+    expect(within(goTile).getByRole('img', { name: 'Player 2 token' })).toBeInTheDocument()
   })
 
   it('starts with two players and lets the count be changed', () => {
