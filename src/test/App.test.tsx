@@ -42,6 +42,20 @@ describe('App shell', () => {
     expect(screen.getAllByRole('textbox')).toHaveLength(4)
   })
 
+  it('disables rolling after the first roll while movement resolution is pending', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+
+    const rollButton = screen.getByRole('button', { name: 'Roll dice' })
+    expect(rollButton).toBeEnabled()
+    fireEvent.click(rollButton)
+
+    expect(rollButton).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Dice rolled. Movement resolution is pending.',
+    )
+  })
+
   it('trims entered names and replaces blank names with their player defaults', () => {
     render(<App />)
 

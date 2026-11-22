@@ -8,8 +8,11 @@ import PlayerNameFields, { normalizePlayerNames } from './components/PlayerNameF
 import PlayerColorSelector, { PLAYER_TOKEN_COLORS } from './components/PlayerColorSelector'
 import type { PlayerColor } from './components/PlayerColorSelector'
 import PlayerPanel from './components/PlayerPanel'
+import RollDiceControl from './components/RollDiceControl'
 import { validateSetup } from './setup/validation'
 import { createInitialGameState, type InitialGameState } from './game/initial-state'
+import { rollDice } from './game/dice'
+import { gameReducer } from './game/reducer'
 
 export default function App(): ReactElement {
   const [selectedDeed, setSelectedDeed] = useState<PropertyDeed | null>(null)
@@ -57,6 +60,17 @@ export default function App(): ReactElement {
     setSelectedDeed(null)
   }
 
+  function handleRollDice() {
+    if (!gameState) {
+      return
+    }
+
+    const dice = rollDice()
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'roll-dice', dice }) : currentState,
+    )
+  }
+
   const setupValidation = validateSetup({
     playerCount,
     playerNames,
@@ -76,6 +90,7 @@ export default function App(): ReactElement {
           <section className="game-screen" aria-labelledby="game-screen-heading">
             <h2 id="game-screen-heading">Game board</h2>
             <PlayerPanel gameState={gameState} />
+            <RollDiceControl onRollDice={handleRollDice} phase={gameState.phase} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
               players={gameState.players}

@@ -14,7 +14,6 @@ describe('gameReducer skeleton', () => {
     const state = createInitialGameState(setup)
     const initialSnapshot = JSON.stringify(state)
     const actions: GameAction[] = [
-      { type: 'roll-dice' },
       { type: 'end-turn' },
       { type: 'buy-property', propertyId: 'mediterranean-avenue' },
       { type: 'decline-purchase', propertyId: 'mediterranean-avenue' },
@@ -31,6 +30,16 @@ describe('gameReducer skeleton', () => {
     } finally {
       randomSpy.mockRestore()
     }
+  })
+
+  it('records a dice result once and blocks another roll during resolution', () => {
+    const state = createInitialGameState(setup)
+    const rolledState = gameReducer(state, { type: 'roll-dice', dice: [2, 5] })
+
+    expect(rolledState).toMatchObject({ dice: [2, 5], phase: 'resolving-turn' })
+    expect(rolledState).not.toBe(state)
+    expect(state).toMatchObject({ dice: null, phase: 'awaiting-roll' })
+    expect(gameReducer(rolledState, { type: 'roll-dice', dice: [1, 1] })).toBe(rolledState)
   })
 
   it('preserves the current state for an unknown or malformed action', () => {
