@@ -34,6 +34,19 @@ function createVermontLandingState(ownershipOverrides: Record<string, string | n
   return gameReducer(rolledState, { type: 'move-player' })
 }
 
+function createRailroadLandingState(ownershipOverrides: Record<string, string | null> = {}) {
+  const initialState = createInitialGameState(setup)
+  const nearRailroadState = {
+    ...initialState,
+    ownership: { ...initialState.ownership, ...ownershipOverrides },
+    players: initialState.players.map((player, index) =>
+      index === 0 ? { ...player, position: 3 } : player,
+    ),
+  }
+  const rolledState = gameReducer(nearRailroadState, { type: 'roll-dice', dice: [1, 1] })
+  return gameReducer(rolledState, { type: 'move-player' })
+}
+
 describe('gameReducer skeleton', () => {
   it('dispatches recognized actions as safe no-ops without mutating or rolling randomly', () => {
     const state = createInitialGameState(setup)
@@ -174,6 +187,23 @@ describe('gameReducer skeleton', () => {
       payerId: 'player-1',
       payeeId: 'player-2',
       amount: 12,
+      reason: 'rent',
+    })
+  })
+
+  it('charges railroad rent based on how many railroads the owner holds', () => {
+    const state = createRailroadLandingState({
+      'reading-railroad': 'player-2',
+      'pennsylvania-railroad': 'player-2',
+    })
+
+    expect(state.players[0]).toMatchObject({ position: 5, cash: 1450 })
+    expect(state.players[1]).toMatchObject({ cash: 1550 })
+    expect(state.log.at(-1)?.event).toEqual({
+      type: 'payment',
+      payerId: 'player-1',
+      payeeId: 'player-2',
+      amount: 50,
       reason: 'rent',
     })
   })
