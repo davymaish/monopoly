@@ -216,6 +216,67 @@ body {
   font-weight: 400;
 }
 
+.player-color-fields {
+  margin: var(--space-5) 0 0;
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.player-color-legend {
+  padding: 0;
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.player-color-help {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--color-muted);
+}
+
+.player-color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-3);
+}
+
+.player-color-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.player-color-control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.player-color-control select {
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.player-color-swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
 .board-perimeter {
   display: grid;
   width: min(100%, 58rem);

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from '../App'
 
@@ -42,6 +42,21 @@ describe('App shell', () => {
     fireEvent.change(secondName, { target: { value: '   ' } })
     fireEvent.blur(secondName)
     expect(secondName).toHaveValue('Player 2')
+  })
+
+  it('assigns distinct token colors to active players', () => {
+    render(<App />)
+
+    expect(screen.getAllByRole('combobox')).toHaveLength(2)
+    fireEvent.click(screen.getByRole('radio', { name: '4 players' }))
+    expect(screen.getAllByRole('combobox')).toHaveLength(4)
+
+    const firstPlayerColor = screen.getByRole('combobox', { name: 'Player 1 token color' })
+    fireEvent.change(firstPlayerColor, { target: { value: 'orange' } })
+
+    expect(firstPlayerColor).toHaveValue('orange')
+    const secondPlayerColor = screen.getByRole('combobox', { name: 'Player 2 token color' })
+    expect(within(secondPlayerColor).getByRole('option', { name: 'Orange' })).toBeDisabled()
   })
 
   it('shows a deed card when a property is hovered', () => {
