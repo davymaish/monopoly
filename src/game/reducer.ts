@@ -5,6 +5,7 @@ import { appendGameLog } from './log'
 import type { GameLogEvent } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 import { getPurchasableDeedById } from './purchasable'
+import { calculateBaseStreetRent } from './rent'
 
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
@@ -37,16 +38,23 @@ export const gameReducer: GameReducer = (state, action) => {
         state.players.map(({ id }) => id),
         currentPlayer.id,
       )
+      const rentOwnerId =
+        landingResolution?.type === 'owned-property' && !landingResolution.ownedByCurrentPlayer
+          ? landingResolution.ownerId
+          : null
+      const rentAmount =
+        landingSpace?.kind === 'property' && rentOwnerId
+          ? calculateBaseStreetRent(landingSpace.id, state.ownership)
+          : 0
       const passesGo = currentPlayer.position + state.dice[0] + state.dice[1] >= BOARD_SPACE_COUNT
-      const players = state.players.map((player, index) =>
-        index === state.currentPlayerIndex
-          ? {
-              ...player,
-              position: destination,
-              cash: player.cash + (passesGo ? GO_SALARY : 0),
-            }
-          : player,
-      )
+      const players = state.players.map((player, index) => ({
+        ...player,
+        ...(index === state.currentPlayerIndex ? { position: destination } : {}),
+        cash:
+          player.cash +
+          (index === state.currentPlayerIndex ? (passesGo ? GO_SALARY : 0) - rentAmount : 0) +
+          (player.id === rentOwnerId ? rentAmount : 0),
+      }))
       const events: GameLogEvent[] = [
         {
           type: 'movement',
@@ -63,6 +71,16 @@ export const gameReducer: GameReducer = (state, action) => {
           playerId: currentPlayer.id,
           amount: GO_SALARY,
           reason: 'go-salary',
+        })
+      }
+
+      if (rentAmount > 0 && rentOwnerId) {
+        events.push({
+          type: 'payment',
+          payerId: currentPlayer.id,
+          payeeId: rentOwnerId,
+          amount: rentAmount,
+          reason: 'rent',
         })
       }
 

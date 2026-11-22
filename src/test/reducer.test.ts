@@ -21,6 +21,19 @@ function createVermontPurchaseState(cash = 1500) {
   return gameReducer(rolledState, { type: 'move-player' })
 }
 
+function createVermontLandingState(ownershipOverrides: Record<string, string | null> = {}) {
+  const initialState = createInitialGameState(setup)
+  const nearPropertyState = {
+    ...initialState,
+    ownership: { ...initialState.ownership, ...ownershipOverrides },
+    players: initialState.players.map((player, index) =>
+      index === 0 ? { ...player, position: 4 } : player,
+    ),
+  }
+  const rolledState = gameReducer(nearPropertyState, { type: 'roll-dice', dice: [2, 2] })
+  return gameReducer(rolledState, { type: 'move-player' })
+}
+
 describe('gameReducer skeleton', () => {
   it('dispatches recognized actions as safe no-ops without mutating or rolling randomly', () => {
     const state = createInitialGameState(setup)
@@ -108,6 +121,48 @@ describe('gameReducer skeleton', () => {
     const noWrapMove = gameReducer(noWrapRoll, { type: 'move-player' })
 
     expect(noWrapMove.players[0]).toMatchObject({ position: 13, cash: 1500 })
+  })
+
+  it('charges base street rent to the active player and credits the owner once', () => {
+    const state = createVermontLandingState({ 'vermont-avenue': 'player-2' })
+
+    expect(state.players[0]).toMatchObject({ position: 8, cash: 1494 })
+    expect(state.players[1]).toMatchObject({ cash: 1506 })
+    expect(state.landingResolution).toEqual({
+      type: 'owned-property',
+      spaceId: 'vermont-avenue',
+      spaceName: 'Vermont Avenue',
+      ownerId: 'player-2',
+      ownedByCurrentPlayer: false,
+      legalActions: ['pay-rent'],
+    })
+    expect(state.log.at(-1)).toEqual({
+      id: 'log-3',
+      event: {
+        type: 'payment',
+        payerId: 'player-1',
+        payeeId: 'player-2',
+        amount: 6,
+        reason: 'rent',
+      },
+    })
+  })
+
+  it('does not charge street rent for unowned, self-owned, or complete-group property', () => {
+    const unownedState = createVermontLandingState()
+    const selfOwnedState = createVermontLandingState({ 'vermont-avenue': 'player-1' })
+    const completeGroupState = createVermontLandingState({
+      'oriental-avenue': 'player-2',
+      'vermont-avenue': 'player-2',
+      'connecticut-avenue': 'player-2',
+    })
+
+    for (const state of [unownedState, selfOwnedState, completeGroupState]) {
+      expect(state.players.map((player) => player.cash)).toEqual([1500, 1500])
+      expect(
+        state.log.some(({ event }) => event.type === 'payment' && event.reason === 'rent'),
+      ).toBe(false)
+    }
   })
 
   it('advances through all players in order and safely wraps to the first player', () => {
