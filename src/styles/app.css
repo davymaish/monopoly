@@ -432,11 +432,42 @@ body {
 }
 
 .board-tile {
+  position: relative;
   min-width: 0;
   min-height: 0;
   border: 1px solid var(--color-border);
   border-radius: 0.25rem;
   background: var(--color-surface);
+}
+
+.board-tile-tokens {
+  position: absolute;
+  z-index: 2;
+  bottom: 2px;
+  left: 50%;
+  display: flex;
+  max-width: calc(100% - 4px);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.board-player-token {
+  display: inline-grid;
+  width: clamp(0.65rem, 1.8vw, 1.125rem);
+  height: clamp(0.65rem, 1.8vw, 1.125rem);
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--color-border);
+  color: #fff;
+  font-size: clamp(0.4rem, 0.8vw, 0.6rem);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
 }
 
 .board-tile[data-selected='true'] {
