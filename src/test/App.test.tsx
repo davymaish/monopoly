@@ -44,6 +44,23 @@ describe('App shell', () => {
     expect(secondName).toHaveValue('Player 2')
   })
 
+  it('shows an accessible setup error and preserves a blank name until corrected', () => {
+    render(<App />)
+
+    const firstName = screen.getByRole('textbox', { name: 'Player 1 name' })
+    fireEvent.change(firstName, { target: { value: '' } })
+
+    expect(firstName).toHaveValue('')
+    expect(firstName).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Enter a name for this player.')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('Resolve the highlighted setup fields')
+
+    fireEvent.change(firstName, { target: { value: 'Avery' } })
+
+    expect(firstName).toHaveValue('Avery')
+    expect(screen.getByRole('status')).toHaveTextContent('Setup is valid.')
+  })
+
   it('assigns distinct token colors to active players', () => {
     render(<App />)
 
