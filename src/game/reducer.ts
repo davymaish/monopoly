@@ -7,6 +7,7 @@ import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './mo
 import { getPurchasableDeedById } from './purchasable'
 import { calculateRailroadRent, calculateStreetRent, calculateUtilityPropertyRent } from './rent'
 import { calculateTaxAmount } from './tax'
+import { getCardDefinition } from './cards'
 
 function finishAuction(state: GameState, auction: AuctionState): GameState {
   const winner = auction.highBidderId
@@ -222,10 +223,91 @@ export const gameReducer: GameReducer = (state, action) => {
         ]),
       }
     }
+    case 'draw-card': {
+      const resolution = state.landingResolution
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const deckKey = action.deck === 'chance' ? 'chance' : 'communityChest'
+      const cardId = state.decks[deckKey][0]
+      const card = cardId ? getCardDefinition(action.deck, cardId) : undefined
+
+      if (
+        state.phase !== 'awaiting-player-action' ||
+        resolution?.type !== 'card' ||
+        resolution.deck !== action.deck ||
+        state.pendingCard !== null ||
+        !currentPlayer ||
+        !cardId ||
+        !card
+      ) {
+        return state
+      }
+
+      const drawnCard = { deck: action.deck, cardId, playerId: currentPlayer.id }
+      const decks = { ...state.decks, [deckKey]: state.decks[deckKey].slice(1) }
+      const events: GameLogEvent[] = [
+        { type: 'card-drawn', playerId: currentPlayer.id, deck: action.deck, cardId },
+      ]
+
+      if (card.effect.type === 'get-out-of-jail-free') {
+        return {
+          ...state,
+          decks,
+          players: state.players.map((player) =>
+            player.id === currentPlayer.id
+              ? { ...player, getOutOfJailFreeCardCount: player.getOutOfJailFreeCardCount + 1 }
+              : player,
+          ),
+          landingResolution: null,
+          heldJailFreeCards: [...state.heldJailFreeCards, drawnCard],
+          log: appendGameLog(state.log, events),
+        }
+      }
+
+      return {
+        ...state,
+        decks,
+        landingResolution: null,
+        pendingCard: drawnCard,
+        log: appendGameLog(state.log, events),
+      }
+    }
+    case 'complete-card': {
+      const pendingCard = state.pendingCard
+      const currentPlayer = state.players[state.currentPlayerIndex]
+
+      if (
+        state.phase !== 'awaiting-player-action' ||
+        !pendingCard ||
+        !currentPlayer ||
+        pendingCard.playerId !== currentPlayer.id
+      ) {
+        return state
+      }
+
+      const deckKey = pendingCard.deck === 'chance' ? 'chance' : 'communityChest'
+      return {
+        ...state,
+        decks: {
+          ...state.decks,
+          [deckKey]: [...state.decks[deckKey], pendingCard.cardId],
+        },
+        pendingCard: null,
+        log: appendGameLog(state.log, [
+          {
+            type: 'card-returned',
+            playerId: currentPlayer.id,
+            deck: pendingCard.deck,
+            cardId: pendingCard.cardId,
+          },
+        ]),
+      }
+    }
     case 'end-turn': {
       if (
         state.phase !== 'awaiting-player-action' ||
         state.landingResolution?.type === 'tax' ||
+        state.landingResolution?.type === 'card' ||
+        state.pendingCard !== null ||
         state.players.length === 0 ||
         !Number.isInteger(state.currentPlayerIndex) ||
         state.currentPlayerIndex < 0 ||

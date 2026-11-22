@@ -1,6 +1,8 @@
 export type CardDestination =
   'go' | 'illinois-avenue' | 'st-charles-place' | 'reading-railroad' | 'boardwalk'
 
+export type CardDeck = 'chance' | 'community-chest'
+
 export type CardEffect =
   | { type: 'cash'; direction: 'collect' | 'pay'; amount: number }
   | { type: 'collect-from-each-opponent'; amount: number }
@@ -188,3 +190,8 @@ export const COMMUNITY_CHEST_CARDS = [
     effect: { type: 'cash', direction: 'collect', amount: 100 },
   },
 ] as const satisfies readonly CardDefinition[]
+
+export function getCardDefinition(deck: CardDeck, cardId: string): CardDefinition | undefined {
+  const cards = deck === 'chance' ? CHANCE_CARDS : COMMUNITY_CHEST_CARDS
+  return cards.find(({ id }) => id === cardId)
+}

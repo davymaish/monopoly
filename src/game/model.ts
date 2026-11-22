@@ -1,4 +1,5 @@
 import type { PlayerColor } from '../setup/config'
+import type { CardDeck } from './cards'
 
 export type PlayerId = string
 export type DieValue = 1 | 2 | 3 | 4 | 5 | 6
@@ -26,6 +27,14 @@ export interface AuctionState {
   passedPlayerIds: PlayerId[]
 }
 
+export interface DrawnCard {
+  deck: CardDeck
+  cardId: string
+  playerId: PlayerId
+}
+
+export type HeldJailFreeCard = DrawnCard
+
 export type PropertyOwnership = Record<string, PlayerId | null>
 
 export interface CardDeckState {
@@ -52,6 +61,8 @@ export type GameLogEvent =
       reason: 'mortgaged'
     }
   | { type: 'auction-ended'; propertyId: string; winnerId: PlayerId | null; amount: number }
+  | { type: 'card-drawn'; playerId: PlayerId; deck: CardDeck; cardId: string }
+  | { type: 'card-returned'; playerId: PlayerId; deck: CardDeck; cardId: string }
   | { type: 'turn-change'; fromPlayerId: PlayerId; toPlayerId: PlayerId }
 
 export interface GameLogEntry {
@@ -116,6 +127,8 @@ export interface GameState {
   landingResolution: LandingResolution | null
   dice: DiceRoll | null
   decks: CardDeckState
+  pendingCard: DrawnCard | null
+  heldJailFreeCards: HeldJailFreeCard[]
   log: GameLogEntry[]
   phase: GamePhase
 }

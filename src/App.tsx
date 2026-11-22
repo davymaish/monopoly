@@ -18,6 +18,7 @@ import { createInitialGameState, type InitialGameState } from './game/initial-st
 import { rollDice } from './game/dice'
 import { gameReducer } from './game/reducer'
 import type { TaxPaymentChoice } from './game/model'
+import type { CardDeck } from './game/cards'
 
 export default function App(): ReactElement {
   const [selectedDeed, setSelectedDeed] = useState<PropertyDeed | null>(null)
@@ -120,6 +121,18 @@ export default function App(): ReactElement {
     )
   }
 
+  function handleDrawCard(deck: CardDeck) {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'draw-card', deck }) : currentState,
+    )
+  }
+
+  function handleCompleteCard() {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'complete-card' }) : currentState,
+    )
+  }
+
   const setupValidation = validateSetup({
     playerCount,
     playerNames,
@@ -148,6 +161,8 @@ export default function App(): ReactElement {
               onRollDice={handleRollDice}
               onMovePlayer={handleMovePlayer}
               onEndTurn={handleEndTurn}
+              onDrawCard={handleDrawCard}
+              onCompleteCard={handleCompleteCard}
             />
             <PurchasePrompt
               gameState={gameState}

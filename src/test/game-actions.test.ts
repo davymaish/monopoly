@@ -13,6 +13,8 @@ describe('game action contract', () => {
       | { type: 'auction-bid'; amount: number }
       | { type: 'auction-pass' }
       | { type: 'pay-tax'; choice: 'fixed' | 'percentage' }
+      | { type: 'draw-card'; deck: 'chance' | 'community-chest' }
+      | { type: 'complete-card' }
     >()
   })
 
@@ -34,5 +36,10 @@ describe('game action contract', () => {
       type: 'pay-tax',
       choice: 'percentage',
     })
+    expect({ type: 'draw-card', deck: 'chance' } satisfies GameAction).toEqual({
+      type: 'draw-card',
+      deck: 'chance',
+    })
+    expect({ type: 'complete-card' } satisfies GameAction).toEqual({ type: 'complete-card' })
   })
 })

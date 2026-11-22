@@ -60,7 +60,7 @@ describe('App shell', () => {
   })
 
   it('shows phase-aware movement and end-turn controls with current activity', () => {
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.8)
 
     try {
       render(<App />)
@@ -161,8 +161,42 @@ describe('App shell', () => {
     }
   })
 
+  it('draws and completes a card from the landed-on deck before ending the turn', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
+
+    try {
+      render(<App />)
+      fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
+
+      expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Draw Community Chest card' }))
+
+      expect(screen.getByText('Bank error in your favor. Collect $200.')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
+      expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+      expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      const activity = screen.getByRole('list', { name: 'Recent activity' })
+      expect(
+        within(activity).getByText(/drew from Community Chest: Bank error/),
+      ).toBeInTheDocument()
+      expect(
+        within(activity).getByText(/returned the card to the bottom of the Community Chest deck/),
+      ).toBeInTheDocument()
+    } finally {
+      randomSpy.mockRestore()
+    }
+  })
+
   it('offers income-tax choices and requires payment before ending the turn', () => {
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.34)
+    const samples = [...Array.from({ length: 30 }, () => 0.5), 0, 0.34]
+    let sampleIndex = 0
+    const randomSpy = vi
+      .spyOn(Math, 'random')
+      .mockImplementation(() => samples[sampleIndex++] ?? 0.5)
 
     try {
       render(<App />)
