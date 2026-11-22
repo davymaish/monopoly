@@ -37,6 +37,7 @@ export const gameReducer: GameReducer = (state, action) => {
         state.ownership,
         state.players.map(({ id }) => id),
         currentPlayer.id,
+        state.mortgagedProperties,
       )
       const rentOwnerId =
         landingResolution?.type === 'owned-property' && !landingResolution.ownedByCurrentPlayer
@@ -89,6 +90,14 @@ export const gameReducer: GameReducer = (state, action) => {
           payeeId: rentOwnerId,
           amount: rentAmount,
           reason: 'rent',
+        })
+      } else if (landingResolution?.type === 'mortgaged-property') {
+        events.push({
+          type: 'rent-skipped',
+          payerId: currentPlayer.id,
+          ownerId: landingResolution.ownerId,
+          propertyId: landingResolution.spaceId,
+          reason: 'mortgaged',
         })
       }
 
