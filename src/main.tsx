@@ -1,12 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { getRootElement } from './app/get-root-element'
 
-const rootElement = document.getElementById('root')
-
-if (!rootElement) {
-  throw new Error('Expected the #root element to exist in index.html.')
-}
+const rootElement = getRootElement()
 
 createRoot(rootElement).render(
   <StrictMode>
