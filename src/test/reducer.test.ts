@@ -52,6 +52,12 @@ describe('gameReducer skeleton', () => {
 
     expect(movedState.players.map((player) => player.position)).toEqual([7, 0])
     expect(movedState).toMatchObject({ dice: [2, 5], phase: 'awaiting-player-action' })
+    expect(movedState.landingResolution).toEqual({
+      type: 'card',
+      spaceId: 'chance-1',
+      deck: 'chance',
+      legalActions: ['draw-card'],
+    })
     expect(movedState.log.map(({ event }) => event)).toEqual([
       { type: 'roll', playerId: 'player-1', dice: [2, 5] },
       { type: 'movement', playerId: 'player-1', from: 0, to: 7, spacesMoved: 7 },
@@ -107,6 +113,7 @@ describe('gameReducer skeleton', () => {
       expect(state.currentPlayerIndex).toBe((turn + 1) % 4)
       expect(state.phase).toBe('awaiting-roll')
       expect(state.dice).toBeNull()
+      expect(state.landingResolution).toBeNull()
       expect(state.log.at(-1)?.event).toEqual({
         type: 'turn-change',
         fromPlayerId: `player-${turn + 1}`,

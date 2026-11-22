@@ -45,6 +45,7 @@ describe('createInitialGameState', () => {
 
     expect(Object.keys(state.ownership).sort()).toEqual(purchasableIds.sort())
     expect(Object.values(state.ownership).every((ownerId) => ownerId === null)).toBe(true)
+    expect(state.landingResolution).toBeNull()
     expect(state.dice).toBeNull()
     expect(state.decks).toEqual({ chance: [], communityChest: [] })
     expect(state.log).toEqual([])
