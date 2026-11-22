@@ -327,7 +327,7 @@ describe('gameReducer skeleton', () => {
     })
 
     for (let turn = 0; turn < 4; turn += 1) {
-      const rolledState = gameReducer(state, { type: 'roll-dice', dice: [1, 1] })
+      const rolledState = gameReducer(state, { type: 'roll-dice', dice: [5, 5] })
       const movedState = gameReducer(rolledState, { type: 'move-player' })
       state = gameReducer(movedState, { type: 'end-turn' })
 
