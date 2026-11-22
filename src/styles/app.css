@@ -204,6 +204,62 @@ body {
   margin-bottom: var(--space-4);
 }
 
+.purchase-prompt {
+  width: min(100%, 58rem);
+  margin: 0 auto var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.purchase-prompt h3 {
+  margin: 0 0 var(--space-2);
+  color: var(--color-brand);
+}
+
+.purchase-prompt p {
+  margin: var(--space-2) 0 0;
+}
+
+.purchase-prompt-unaffordable {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.purchase-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.purchase-prompt-button {
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: var(--color-control-background);
+  color: var(--color-control-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.purchase-prompt-button--secondary {
+  border-color: var(--color-border);
+  background: var(--color-page);
+  color: var(--color-text);
+}
+
+.purchase-prompt-button:disabled {
+  border-color: var(--color-border);
+  background: var(--color-page);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
 .turn-action-button {
   min-height: 3rem;
   padding: var(--space-2) var(--space-5);

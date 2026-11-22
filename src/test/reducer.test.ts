@@ -9,6 +9,18 @@ const setup = {
   playerColors: ['red', 'blue'] as const,
 }
 
+function createVermontPurchaseState(cash = 1500) {
+  const initialState = createInitialGameState(setup)
+  const nearPropertyState = {
+    ...initialState,
+    players: initialState.players.map((player, index) =>
+      index === 0 ? { ...player, position: 4, cash } : player,
+    ),
+  }
+  const rolledState = gameReducer(nearPropertyState, { type: 'roll-dice', dice: [2, 2] })
+  return gameReducer(rolledState, { type: 'move-player' })
+}
+
 describe('gameReducer skeleton', () => {
   it('dispatches recognized actions as safe no-ops without mutating or rolling randomly', () => {
     const state = createInitialGameState(setup)
@@ -120,6 +132,72 @@ describe('gameReducer skeleton', () => {
         toPlayerId: `player-${((turn + 1) % 4) + 1}`,
       })
     }
+  })
+
+  it('buys a pending property atomically, charging the active player and logging payment', () => {
+    const state = createVermontPurchaseState()
+    const purchasedState = gameReducer(state, {
+      type: 'buy-property',
+      propertyId: 'vermont-avenue',
+    })
+
+    expect(purchasedState.players[0]).toMatchObject({ cash: 1400 })
+    expect(purchasedState.players[1]).toMatchObject({ cash: 1500 })
+    expect(purchasedState.ownership['vermont-avenue']).toBe('player-1')
+    expect(purchasedState.landingResolution).toBeNull()
+    expect(purchasedState.phase).toBe('awaiting-player-action')
+    expect(purchasedState.log.at(-1)).toEqual({
+      id: 'log-3',
+      event: {
+        type: 'payment',
+        payerId: 'player-1',
+        payeeId: null,
+        amount: 100,
+        reason: 'property-purchase',
+      },
+    })
+    expect(state.players[0]?.cash).toBe(1500)
+    expect(state.ownership['vermont-avenue']).toBeNull()
+  })
+
+  it('rejects mismatched, unaffordable, or already-owned purchase requests without changes', () => {
+    const state = createVermontPurchaseState()
+    const poorState = {
+      ...state,
+      players: state.players.map((player, index) =>
+        index === 0 ? { ...player, cash: 50 } : player,
+      ),
+    }
+    const alreadyOwnedState = {
+      ...state,
+      ownership: { ...state.ownership, 'vermont-avenue': 'player-2' },
+    }
+
+    expect(gameReducer(state, { type: 'buy-property', propertyId: 'baltic-avenue' })).toBe(state)
+    expect(gameReducer(poorState, { type: 'buy-property', propertyId: 'vermont-avenue' })).toBe(
+      poorState,
+    )
+    expect(
+      gameReducer(alreadyOwnedState, {
+        type: 'buy-property',
+        propertyId: 'vermont-avenue',
+      }),
+    ).toBe(alreadyOwnedState)
+  })
+
+  it('clears a matching purchase offer when declined but rejects unrelated decline actions', () => {
+    const state = createVermontPurchaseState()
+    const declinedState = gameReducer(state, {
+      type: 'decline-purchase',
+      propertyId: 'vermont-avenue',
+    })
+
+    expect(declinedState.landingResolution).toBeNull()
+    expect(declinedState.players[0]?.cash).toBe(1500)
+    expect(declinedState.ownership['vermont-avenue']).toBeNull()
+    expect(gameReducer(state, { type: 'decline-purchase', propertyId: 'baltic-avenue' })).toBe(
+      state,
+    )
   })
 
   it('preserves the current state for an unknown or malformed action', () => {
