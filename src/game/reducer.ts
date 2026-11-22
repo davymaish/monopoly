@@ -30,7 +30,24 @@ export const gameReducer: GameReducer = (state, action) => {
 
       return { ...state, players, phase: 'awaiting-player-action' }
     }
-    case 'end-turn':
+    case 'end-turn': {
+      if (
+        state.phase !== 'awaiting-player-action' ||
+        state.players.length === 0 ||
+        !Number.isInteger(state.currentPlayerIndex) ||
+        state.currentPlayerIndex < 0 ||
+        state.currentPlayerIndex >= state.players.length
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
+        dice: null,
+        phase: 'awaiting-roll',
+      }
+    }
     case 'buy-property':
     case 'decline-purchase':
       return state
