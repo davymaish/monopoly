@@ -38,6 +38,20 @@ describe('createInitialGameState', () => {
     ).toBe(true)
   })
 
+  it('initializes the full game state with unowned purchasable spaces and no pending activity', () => {
+    const state = createInitialGameState(twoPlayerSetup)
+    const purchasableIds = BOARD_SPACES.filter(
+      (space) => space.kind === 'property' || space.kind === 'railroad' || space.kind === 'utility',
+    ).map(({ id }) => id)
+
+    expect(Object.keys(state.ownership).sort()).toEqual(purchasableIds.sort())
+    expect(Object.values(state.ownership).every((ownerId) => ownerId === null)).toBe(true)
+    expect(state.dice).toBeNull()
+    expect(state.decks).toEqual({ chance: [], communityChest: [] })
+    expect(state.log).toEqual([])
+    expect(state.phase).toBe('awaiting-roll')
+  })
+
   it('supports a four-player starting state', () => {
     const state = createInitialGameState({
       playerCount: 4,

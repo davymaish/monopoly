@@ -1,23 +1,11 @@
 import { BOARD_SPACES } from './board'
 import { PLAYER_COLOR_IDS, type PlayerColor, type PlayerCount } from '../setup/config'
 import { validateSetup } from '../setup/validation'
+import type { GameState, Player, PropertyOwnership } from './model'
+
+export type { GameState as InitialGameState, Player as InitialPlayer } from './model'
 
 export const STARTING_CASH = 1500
-
-export interface InitialPlayer {
-  id: string
-  name: string
-  color: PlayerColor
-  cash: number
-  position: number
-  ownedPropertyIds: string[]
-  getOutOfJailFreeCardCount: number
-}
-
-export interface InitialGameState {
-  players: InitialPlayer[]
-  currentPlayerIndex: number
-}
 
 export interface InitialGameSetup {
   playerCount: PlayerCount
@@ -35,7 +23,19 @@ function getGoPosition(): number {
   return goSpace.position
 }
 
-export function createInitialGameState(setup: InitialGameSetup): InitialGameState {
+function createInitialOwnership(): PropertyOwnership {
+  const ownership: PropertyOwnership = {}
+
+  for (const space of BOARD_SPACES) {
+    if (space.kind === 'property' || space.kind === 'railroad' || space.kind === 'utility') {
+      ownership[space.id] = null
+    }
+  }
+
+  return ownership
+}
+
+export function createInitialGameState(setup: InitialGameSetup): GameState {
   const validation = validateSetup({
     playerCount: setup.playerCount,
     playerNames: setup.playerNames,
@@ -56,7 +56,7 @@ export function createInitialGameState(setup: InitialGameSetup): InitialGameStat
       throw new Error('Initial setup must provide a name and color for every player.')
     }
 
-    return {
+    const player: Player = {
       id: `player-${index + 1}`,
       name,
       color,
@@ -65,7 +65,17 @@ export function createInitialGameState(setup: InitialGameSetup): InitialGameStat
       ownedPropertyIds: [],
       getOutOfJailFreeCardCount: 0,
     }
+
+    return player
   })
 
-  return { players, currentPlayerIndex: 0 }
+  return {
+    players,
+    currentPlayerIndex: 0,
+    ownership: createInitialOwnership(),
+    dice: null,
+    decks: { chance: [], communityChest: [] },
+    log: [],
+    phase: 'awaiting-roll',
+  }
 }
