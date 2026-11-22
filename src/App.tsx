@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactElement } from 'react'
 import BoardPerimeter from './components/BoardPerimeter'
 import DiceDisplay from './components/DiceDisplay'
+import PurchasePrompt from './components/PurchasePrompt'
 import PropertyDetailCard from './components/PropertyDetailCard'
 import type { PropertyDeed } from './components/PropertyDetailCard'
 import PlayerCountSelector from './components/PlayerCountSelector'
@@ -84,6 +85,20 @@ export default function App(): ReactElement {
     )
   }
 
+  function handleBuyProperty(propertyId: string) {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'buy-property', propertyId }) : currentState,
+    )
+  }
+
+  function handleDeclinePurchase(propertyId: string) {
+    setGameState((currentState) =>
+      currentState
+        ? gameReducer(currentState, { type: 'decline-purchase', propertyId })
+        : currentState,
+    )
+  }
+
   const setupValidation = validateSetup({
     playerCount,
     playerNames,
@@ -108,6 +123,11 @@ export default function App(): ReactElement {
               onRollDice={handleRollDice}
               onMovePlayer={handleMovePlayer}
               onEndTurn={handleEndTurn}
+            />
+            <PurchasePrompt
+              gameState={gameState}
+              onBuyProperty={handleBuyProperty}
+              onDeclinePurchase={handleDeclinePurchase}
             />
             <DiceDisplay dice={gameState.dice} />
             <BoardPerimeter

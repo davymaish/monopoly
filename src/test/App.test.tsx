@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import App from '../App'
 
 describe('App shell', () => {
@@ -60,25 +60,82 @@ describe('App shell', () => {
   })
 
   it('shows phase-aware movement and end-turn controls with current activity', () => {
-    render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
 
-    const summary = screen.getByRole('region', { name: 'Turn summary' })
-    expect(within(summary).getByText('Player 1', { selector: 'strong' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
-    expect(screen.getByRole('button', { name: 'Complete movement' })).toBeEnabled()
-    fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
-    expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Roll dice' })).toBeDisabled()
+    try {
+      render(<App />)
+      fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
 
-    fireEvent.click(screen.getByRole('button', { name: 'End turn' }))
+      const summary = screen.getByRole('region', { name: 'Turn summary' })
+      expect(within(summary).getByText('Player 1', { selector: 'strong' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
+      expect(screen.getByRole('button', { name: 'Complete movement' })).toBeEnabled()
+      fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
+      expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Roll dice' })).toBeDisabled()
 
-    expect(within(summary).getByText('Player 2', { selector: 'strong' })).toBeInTheDocument()
-    const activity = screen.getByRole('list', { name: 'Recent activity' })
-    expect(within(activity).getByText(/Player 1 rolled \d and \d\./)).toBeInTheDocument()
-    expect(within(activity).getByText(/Player 1 moved \d+ spaces to/)).toBeInTheDocument()
-    expect(within(activity).getByText(/Player 2 is up next\./)).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'End turn' }))
+
+      expect(within(summary).getByText('Player 2', { selector: 'strong' })).toBeInTheDocument()
+      const activity = screen.getByRole('list', { name: 'Recent activity' })
+      expect(within(activity).getByText(/Player 1 rolled \d and \d\./)).toBeInTheDocument()
+      expect(within(activity).getByText(/Player 1 moved \d+ spaces to/)).toBeInTheDocument()
+      expect(within(activity).getByText(/Player 2 is up next\./)).toBeInTheDocument()
+    } finally {
+      randomSpy.mockRestore()
+    }
+  })
+
+  it('offers an affordable property purchase and records the completed transaction', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+
+    try {
+      render(<App />)
+      fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
+
+      const offer = screen.getByRole('region', { name: 'Property purchase' })
+      expect(within(offer).getByText('Vermont Avenue')).toBeInTheDocument()
+      expect(within(offer).getByText(/costs \$100/)).toBeInTheDocument()
+      expect(within(offer).getByText('Your balance: $1,500.')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Buy Vermont Avenue for $100' }))
+
+      expect(screen.queryByRole('region', { name: 'Property purchase' })).not.toBeInTheDocument()
+      expect(screen.getByText('$1,400')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      const activity = screen.getByRole('list', { name: 'Recent activity' })
+      expect(
+        within(activity).getByText(/Player 1 paid \$100 to the bank for property purchase/),
+      ).toBeInTheDocument()
+    } finally {
+      randomSpy.mockRestore()
+    }
+  })
+
+  it('declines an offered property without charging cash and then allows the turn to end', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+
+    try {
+      render(<App />)
+      fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
+
+      fireEvent.click(screen.getByRole('button', { name: 'Decline purchase' }))
+
+      expect(screen.queryByRole('region', { name: 'Property purchase' })).not.toBeInTheDocument()
+      expect(screen.getAllByText('$1,500')).toHaveLength(2)
+      expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      expect(
+        within(screen.getByRole('list', { name: 'Recent activity' })).queryByText(/paid \$100/),
+      ).not.toBeInTheDocument()
+    } finally {
+      randomSpy.mockRestore()
+    }
   })
 
   it('trims entered names and replaces blank names with their player defaults', () => {

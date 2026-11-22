@@ -48,6 +48,7 @@ export default function TurnSummary({
 }: TurnSummaryProps): ReactElement {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
   const recentEntries = gameState.log.slice(-5)
+  const hasPendingPurchase = gameState.landingResolution?.type === 'unowned-property'
 
   return (
     <section className="turn-summary" aria-labelledby="turn-summary-heading">
@@ -63,12 +64,15 @@ export default function TurnSummary({
           </button>
         </div>
       )}
-      {gameState.phase === 'awaiting-player-action' && (
+      {gameState.phase === 'awaiting-player-action' && !hasPendingPurchase && (
         <div className="turn-summary-actions">
           <button className="turn-action-button" onClick={onEndTurn} type="button">
             End turn
           </button>
         </div>
+      )}
+      {gameState.phase === 'awaiting-player-action' && hasPendingPurchase && (
+        <p className="turn-summary-status">Choose to buy or decline before ending your turn.</p>
       )}
       {gameState.phase === 'game-over' && (
         <p className="turn-summary-status">The game has ended.</p>
