@@ -107,6 +107,11 @@ describe('App shell', () => {
       expect(screen.queryByRole('region', { name: 'Property purchase' })).not.toBeInTheDocument()
       expect(screen.getByText('$1,400')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      expect(
+        screen.getByRole('listitem', { name: 'Vermont Avenue, space 9, owned by Player 1' }),
+      ).toHaveAttribute('data-owner-id', 'player-1')
+      fireEvent.click(screen.getByRole('button', { name: 'Show details for Vermont Avenue' }))
+      expect(screen.getByText('Owned by Player 1')).toBeInTheDocument()
       const activity = screen.getByRole('list', { name: 'Recent activity' })
       expect(
         within(activity).getByText(/Player 1 paid \$100 to the bank for property purchase/),

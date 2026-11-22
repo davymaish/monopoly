@@ -1,11 +1,14 @@
 import { PROPERTY_GROUPS } from '../game/property-groups'
+import type { Player } from '../game/model'
 import type { RailroadProperty } from '../game/railroad-data'
 import type { StreetProperty } from '../game/street-data'
 import type { UtilityProperty } from '../game/utility-data'
+import { PLAYER_TOKEN_COLORS } from './PlayerColorSelector'
 
 export type PropertyDeed = StreetProperty | RailroadProperty | UtilityProperty
 
 interface PropertyDetailCardProps {
+  owner?: Pick<Player, 'color' | 'name'> | null
   property: PropertyDeed | null
 }
 
@@ -22,7 +25,11 @@ function formatMoney(value: number): string {
   return `$${value.toLocaleString('en-US')}`
 }
 
-export default function PropertyDetailCard({ property }: PropertyDetailCardProps) {
+export default function PropertyDetailCard({ property, owner = null }: PropertyDetailCardProps) {
+  const ownerColor = owner
+    ? PLAYER_TOKEN_COLORS.find((color) => color.id === owner.color)
+    : undefined
+
   return (
     <aside
       className="property-detail-card"
@@ -37,6 +44,16 @@ export default function PropertyDetailCard({ property }: PropertyDetailCardProps
             {property.kind === 'property' && <p>{PROPERTY_GROUPS[property.group].label} street</p>}
             {property.kind === 'railroad' && <p>Railroad</p>}
             {property.kind === 'utility' && <p>Utility</p>}
+            <p className="property-detail-owner">
+              {owner && (
+                <span
+                  aria-hidden="true"
+                  className="property-detail-owner-swatch"
+                  style={{ backgroundColor: ownerColor?.hex ?? 'transparent' }}
+                />
+              )}
+              {owner ? `Owned by ${owner.name}` : 'Unowned'}
+            </p>
           </div>
           <dl className="property-detail-values">
             <DetailRow label="Purchase price" value={formatMoney(property.purchasePrice)} />
