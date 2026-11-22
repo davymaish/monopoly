@@ -21,6 +21,8 @@ describe('App shell', () => {
 
     expect(screen.queryByRole('heading', { level: 2, name: 'Game setup' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Game board' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Players' })).toBeInTheDocument()
+    expect(screen.getAllByText('$1,500')).toHaveLength(2)
     expect(screen.getByRole('list', { name: 'Monopoly board' })).toBeInTheDocument()
   })
 
