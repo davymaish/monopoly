@@ -4,6 +4,7 @@ import { validateSetup } from '../setup/validation'
 import { createInitialPropertyOwnership } from './ownership'
 import type { GameState, Player } from './model'
 import { createShuffledDecks, type CardRandomSource } from './card-shuffle'
+import { STREET_PROPERTIES } from './street-data'
 
 export type { GameState as InitialGameState, Player as InitialPlayer } from './model'
 
@@ -65,6 +66,9 @@ export function createInitialGameState(
     players,
     currentPlayerIndex: 0,
     ownership: createInitialPropertyOwnership(),
+    propertyBuildings: Object.fromEntries(
+      STREET_PROPERTIES.map(({ id }) => [id, { houses: 0, hotels: 0 }]),
+    ),
     mortgagedProperties: [],
     auction: null,
     landingResolution: null,
