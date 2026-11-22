@@ -59,6 +59,28 @@ describe('App shell', () => {
     expect(within(diceRegion).getByText('Total').parentElement).toHaveTextContent(/\d+/)
   })
 
+  it('shows phase-aware movement and end-turn controls with current activity', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+
+    const summary = screen.getByRole('region', { name: 'Turn summary' })
+    expect(within(summary).getByText('Player 1', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
+    expect(screen.getByRole('button', { name: 'Complete movement' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
+    expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Roll dice' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'End turn' }))
+
+    expect(within(summary).getByText('Player 2', { selector: 'strong' })).toBeInTheDocument()
+    const activity = screen.getByRole('list', { name: 'Recent activity' })
+    expect(within(activity).getByText(/Player 1 rolled \d and \d\./)).toBeInTheDocument()
+    expect(within(activity).getByText(/Player 1 moved \d+ spaces to/)).toBeInTheDocument()
+    expect(within(activity).getByText(/Player 2 is up next\./)).toBeInTheDocument()
+  })
+
   it('trims entered names and replaces blank names with their player defaults', () => {
     render(<App />)
 

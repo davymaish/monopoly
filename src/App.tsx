@@ -9,7 +9,7 @@ import PlayerNameFields, { normalizePlayerNames } from './components/PlayerNameF
 import PlayerColorSelector, { PLAYER_TOKEN_COLORS } from './components/PlayerColorSelector'
 import type { PlayerColor } from './components/PlayerColorSelector'
 import PlayerPanel from './components/PlayerPanel'
-import RollDiceControl from './components/RollDiceControl'
+import TurnSummary from './components/TurnSummary'
 import { validateSetup } from './setup/validation'
 import { createInitialGameState, type InitialGameState } from './game/initial-state'
 import { rollDice } from './game/dice'
@@ -72,6 +72,18 @@ export default function App(): ReactElement {
     )
   }
 
+  function handleMovePlayer() {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'move-player' }) : currentState,
+    )
+  }
+
+  function handleEndTurn() {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'end-turn' }) : currentState,
+    )
+  }
+
   const setupValidation = validateSetup({
     playerCount,
     playerNames,
@@ -91,7 +103,12 @@ export default function App(): ReactElement {
           <section className="game-screen" aria-labelledby="game-screen-heading">
             <h2 id="game-screen-heading">Game board</h2>
             <PlayerPanel gameState={gameState} />
-            <RollDiceControl onRollDice={handleRollDice} phase={gameState.phase} />
+            <TurnSummary
+              gameState={gameState}
+              onRollDice={handleRollDice}
+              onMovePlayer={handleMovePlayer}
+              onEndTurn={handleEndTurn}
+            />
             <DiceDisplay dice={gameState.dice} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
