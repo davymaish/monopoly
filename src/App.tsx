@@ -5,11 +5,19 @@ import type { PropertyDeed } from './components/PropertyDetailCard'
 import PlayerCountSelector from './components/PlayerCountSelector'
 import type { PlayerCount } from './components/PlayerCountSelector'
 import PlayerNameFields, { normalizePlayerNames } from './components/PlayerNameFields'
+import PlayerColorSelector from './components/PlayerColorSelector'
+import type { PlayerColor } from './components/PlayerColorSelector'
 
 export default function App(): ReactElement {
   const [selectedDeed, setSelectedDeed] = useState<PropertyDeed | null>(null)
   const [playerCount, setPlayerCount] = useState<PlayerCount>(2)
   const [playerNames, setPlayerNames] = useState(['Player 1', 'Player 2', 'Player 3', 'Player 4'])
+  const [playerColors, setPlayerColors] = useState<PlayerColor[]>([
+    'red',
+    'blue',
+    'green',
+    'purple',
+  ])
 
   function handlePlayerNameChange(index: number, name: string) {
     setPlayerNames((currentNames) =>
@@ -24,6 +32,14 @@ export default function App(): ReactElement {
       ...normalizePlayerNames(currentNames, playerCount),
       ...currentNames.slice(playerCount),
     ])
+  }
+
+  function handlePlayerColorChange(index: number, color: PlayerColor) {
+    setPlayerColors((currentColors) =>
+      currentColors.map((currentColor, currentIndex) =>
+        currentIndex === index ? color : currentColor,
+      ),
+    )
   }
 
   return (
@@ -42,6 +58,11 @@ export default function App(): ReactElement {
             playerNames={playerNames}
             onPlayerNameChange={handlePlayerNameChange}
             onNormalizeNames={handleNormalizeNames}
+          />
+          <PlayerColorSelector
+            playerCount={playerCount}
+            playerColors={playerColors}
+            onPlayerColorChange={handlePlayerColorChange}
           />
         </section>
         <BoardPerimeter onSelectDeed={setSelectedDeed} selectedDeedId={selectedDeed?.id ?? null} />
