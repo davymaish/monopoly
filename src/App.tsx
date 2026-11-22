@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import BoardPerimeter from './components/BoardPerimeter'
 
 export default function App(): ReactElement {
   return (
@@ -9,11 +10,7 @@ export default function App(): ReactElement {
         <p className="app-subtitle">Local pass-and-play for 2–4 players</p>
       </header>
       <main className="app-main">
-        <section className="app-card" aria-labelledby="game-status-title">
-          <h2 id="game-status-title">The game is coming together.</h2>
-          <p>Game interface is being built.</p>
-          <p>Setup and the board will arrive in the next update.</p>
-        </section>
+        <BoardPerimeter />
       </main>
     </div>
   )
