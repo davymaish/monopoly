@@ -17,6 +17,17 @@ describe('App shell', () => {
     expect(screen.getByRole('list', { name: 'Monopoly board' })).toBeInTheDocument()
   })
 
+  it('starts with two players and lets the count be changed', () => {
+    render(<App />)
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Game setup' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '2 players' })).toBeChecked()
+
+    fireEvent.click(screen.getByRole('radio', { name: '4 players' }))
+
+    expect(screen.getByRole('radio', { name: '4 players' })).toBeChecked()
+  })
+
   it('shows a deed card when a property is hovered', () => {
     render(<App />)
 
