@@ -42,6 +42,17 @@ describe('gameReducer skeleton', () => {
     expect(gameReducer(rolledState, { type: 'roll-dice', dice: [1, 1] })).toBe(rolledState)
   })
 
+  it('moves only the active player by the stored dice total during resolution', () => {
+    const state = createInitialGameState(setup)
+    const rolledState = gameReducer(state, { type: 'roll-dice', dice: [2, 5] })
+    const movedState = gameReducer(rolledState, { type: 'move-player' })
+
+    expect(movedState.players.map((player) => player.position)).toEqual([7, 0])
+    expect(movedState).toMatchObject({ dice: [2, 5], phase: 'awaiting-player-action' })
+    expect(rolledState.players.map((player) => player.position)).toEqual([0, 0])
+    expect(gameReducer(state, { type: 'move-player' })).toBe(state)
+  })
+
   it('preserves the current state for an unknown or malformed action', () => {
     const state = createInitialGameState(setup)
     const invalidAction = { type: 'skip-turn', extra: true } as unknown as GameAction

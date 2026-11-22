@@ -6,6 +6,7 @@ describe('game action contract', () => {
   it('uses a discriminated union with only the payloads each transition needs', () => {
     expectTypeOf<GameAction>().toEqualTypeOf<
       | { type: 'roll-dice'; dice: DiceRoll }
+      | { type: 'move-player' }
       | { type: 'end-turn' }
       | { type: 'buy-property'; propertyId: string }
       | { type: 'decline-purchase'; propertyId: string }
