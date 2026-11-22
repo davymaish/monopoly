@@ -161,6 +161,36 @@ describe('App shell', () => {
     }
   })
 
+  it('offers income-tax choices and requires payment before ending the turn', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.34)
+
+    try {
+      render(<App />)
+      fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
+
+      const taxPrompt = screen.getByRole('region', { name: 'Income Tax' })
+      expect(within(taxPrompt).getByText(/may pay \$200 or 10% of total worth/)).toBeInTheDocument()
+      expect(within(taxPrompt).getByText(/Total worth: \$1,500/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+      expect(screen.getByText('Pay the tax before ending your turn.')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /Pay \$150 \(10% of total worth\)/ }))
+
+      expect(screen.queryByRole('region', { name: 'Income Tax' })).not.toBeInTheDocument()
+      expect(screen.getByText('$1,350')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      expect(
+        within(screen.getByRole('list', { name: 'Recent activity' })).getByText(
+          /Player 1 paid \$150 to the bank for tax/,
+        ),
+      ).toBeInTheDocument()
+    } finally {
+      randomSpy.mockRestore()
+    }
+  })
+
   it('trims entered names and replaces blank names with their player defaults', () => {
     render(<App />)
 
