@@ -1,6 +1,7 @@
 import { BOARD_SPACES } from '../game/board'
 import type { BoardSpace } from '../game/board-space'
 import type { InitialPlayer } from '../game/initial-state'
+import type { PropertyOwnership } from '../game/model'
 import { RAILROADS } from '../game/railroad-data'
 import type { RailroadProperty } from '../game/railroad-data'
 import { STREET_PROPERTIES } from '../game/street-data'
@@ -17,6 +18,7 @@ export interface GridCoordinates {
 
 interface BoardPerimeterProps {
   onSelectDeed?: (deed: PropertyDeed) => void
+  ownership?: PropertyOwnership
   players?: readonly Pick<InitialPlayer, 'id' | 'name' | 'color' | 'position'>[]
   selectedDeedId?: string | null
 }
@@ -56,6 +58,7 @@ export function getBoardGridCoordinates(position: number): GridCoordinates {
 
 export default function BoardPerimeter({
   onSelectDeed,
+  ownership = {},
   players = [],
   selectedDeedId,
 }: BoardPerimeterProps = {}) {
@@ -87,6 +90,11 @@ export default function BoardPerimeter({
               : undefined
         const isProperty = space.kind === 'property'
         const deed = getPropertyDeed(space)
+        const ownerId = deed ? ownership[deed.id] : null
+        const owner = ownerId ? players.find((player) => player.id === ownerId) : undefined
+        const ownerColor = owner
+          ? PLAYER_TOKEN_COLORS.find((option) => option.id === owner.color)
+          : undefined
         const playersAtSpace = players.filter((player) => player.position === space.position)
         const tileClassName = `${edge ? `board-tile board-tile--${edge}` : 'board-tile'}${
           corner ? ` board-tile--corner board-tile--corner-${corner}` : ''
@@ -150,11 +158,12 @@ export default function BoardPerimeter({
             key={space.id}
             className={tileClassName}
             role="listitem"
-            aria-label={`${space.name}, space ${space.position + 1}`}
+            aria-label={`${space.name}, space ${space.position + 1}${owner ? `, owned by ${owner.name}` : ''}`}
             data-position={space.position}
             data-grid-row={row}
             data-grid-column={column}
             data-kind={space.kind}
+            data-owner-id={owner?.id}
             data-edge={edge}
             data-corner={corner}
             data-group={isProperty ? space.group : undefined}
@@ -194,6 +203,13 @@ export default function BoardPerimeter({
                   )
                 })}
               </div>
+            )}
+            {owner && (
+              <span
+                aria-hidden="true"
+                className="board-tile-owner"
+                style={{ backgroundColor: ownerColor?.hex ?? 'transparent' }}
+              />
             )}
           </div>
         )

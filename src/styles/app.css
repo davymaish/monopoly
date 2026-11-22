@@ -653,6 +653,19 @@ body {
   pointer-events: none;
 }
 
+.board-tile-owner {
+  position: absolute;
+  z-index: 2;
+  top: 2px;
+  right: 2px;
+  width: clamp(0.45rem, 1.2vw, 0.8rem);
+  height: clamp(0.45rem, 1.2vw, 0.8rem);
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--color-border);
+  pointer-events: none;
+}
+
 .board-player-token {
   display: inline-grid;
   width: clamp(0.65rem, 1.8vw, 1.125rem);
@@ -943,6 +956,23 @@ body {
 .property-detail-empty {
   margin: var(--space-1) 0 0;
   color: var(--color-muted);
+}
+
+.property-detail-heading .property-detail-owner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.property-detail-owner-swatch {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--color-border);
 }
 
 .property-detail-values {

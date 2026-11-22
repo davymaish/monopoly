@@ -40,6 +40,20 @@ describe('PropertyDetailCard', () => {
     expect(screen.getByText('10× dice total')).toBeInTheDocument()
   })
 
+  it('shows owner identity with the selected player token color', () => {
+    render(
+      <PropertyDetailCard
+        property={STREET_PROPERTIES[0]}
+        owner={{ name: 'Alice', color: 'red' }}
+      />,
+    )
+
+    expect(screen.getByText('Owned by Alice')).toBeInTheDocument()
+    expect(document.querySelector('.property-detail-owner-swatch')).toHaveStyle({
+      backgroundColor: '#a52832',
+    })
+  })
+
   it('prompts players before a deed has been selected', () => {
     render(<PropertyDetailCard property={null} />)
 

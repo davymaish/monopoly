@@ -18,6 +18,20 @@ describe('board perimeter', () => {
     ).toBe(true)
   })
 
+  it('shows the owner identity and token color for an owned deed', () => {
+    render(
+      <BoardPerimeter
+        ownership={{ 'vermont-avenue': 'player-1' }}
+        players={[{ id: 'player-1', name: 'Alice', color: 'red', position: 8 }]}
+      />,
+    )
+
+    const tile = screen.getByRole('listitem', { name: 'Vermont Avenue, space 9, owned by Alice' })
+
+    expect(tile).toHaveAttribute('data-owner-id', 'player-1')
+    expect(tile.querySelector('.board-tile-owner')).toHaveStyle({ backgroundColor: '#a52832' })
+  })
+
   it('places the four corners at the corners of the 11 by 11 perimeter', () => {
     expect(getBoardGridCoordinates(0)).toEqual({ row: 10, column: 10 })
     expect(getBoardGridCoordinates(10)).toEqual({ row: 10, column: 0 })

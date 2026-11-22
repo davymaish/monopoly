@@ -105,6 +105,10 @@ export default function App(): ReactElement {
     playerColors,
     availableColorIds: PLAYER_TOKEN_COLORS.map((color) => color.id),
   })
+  const selectedDeedOwnerId = selectedDeed ? gameState?.ownership[selectedDeed.id] : null
+  const selectedDeedOwner = selectedDeedOwnerId
+    ? (gameState?.players.find((player) => player.id === selectedDeedOwnerId) ?? null)
+    : null
 
   return (
     <div className="app-shell">
@@ -132,10 +136,11 @@ export default function App(): ReactElement {
             <DiceDisplay dice={gameState.dice} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
+              ownership={gameState.ownership}
               players={gameState.players}
               selectedDeedId={selectedDeed?.id ?? null}
             />
-            <PropertyDetailCard property={selectedDeed} />
+            <PropertyDetailCard property={selectedDeed} owner={selectedDeedOwner} />
           </section>
         ) : (
           <form className="setup-panel" aria-labelledby="setup-heading" onSubmit={handleStartGame}>
