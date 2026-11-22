@@ -122,11 +122,45 @@ describe('board perimeter', () => {
     })
   })
 
+  it('renders the left ten spaces from bottom to top with vertical labels', () => {
+    const { container } = render(<BoardPerimeter />)
+    const leftTiles = Array.from(
+      container.querySelectorAll<HTMLElement>('.board-tile[data-edge="left"]'),
+    )
+    const expectedSpaces = BOARD_SPACES.filter(
+      (space) => space.position >= 10 && space.position < 20,
+    )
+
+    expect(leftTiles).toHaveLength(10)
+    expect(leftTiles.map((tile) => Number(tile.dataset.position))).toEqual(
+      expectedSpaces.map((space) => space.position),
+    )
+
+    expectedSpaces.forEach((space, index) => {
+      const tile = leftTiles[index]
+      const name = tile.querySelector('.board-tile-name')
+
+      expect(tile).toHaveAttribute('data-grid-row', String(10 - index))
+      expect(tile).toHaveAttribute('data-grid-column', '0')
+      expect(name).toHaveTextContent(space.name)
+      expect(name).toHaveClass('board-tile-name--left')
+
+      if (space.kind === 'property') {
+        expect(tile).toHaveAttribute('data-group', space.group)
+        expect(tile.querySelector('.board-tile-band')).toHaveClass('board-tile-band--left')
+      } else {
+        expect(tile).not.toHaveAttribute('data-group')
+        expect(tile.querySelector('.board-tile-band')).not.toBeInTheDocument()
+      }
+    })
+  })
+
   it('renders all board spaces as labelled perimeter slots with a reserved center', () => {
     render(<BoardPerimeter />)
 
     expect(screen.getByRole('list', { name: 'Monopoly board' })).toBeInTheDocument()
     expect(screen.getAllByRole('listitem')).toHaveLength(40)
+    expect(document.querySelectorAll('.board-tile-name')).toHaveLength(40)
     expect(screen.getByRole('listitem', { name: 'GO, space 1' })).toHaveAttribute(
       'data-grid-row',
       '10',
