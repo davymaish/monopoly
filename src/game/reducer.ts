@@ -91,6 +91,21 @@ function advanceAuction(
   return finishAuction(state, auction)
 }
 
+function calculatePropertyRepairCost(
+  state: GameState,
+  playerId: PlayerId,
+  houseCost: number,
+  hotelCost: number,
+): number {
+  return Object.entries(state.propertyBuildings).reduce((total, [propertyId, buildings]) => {
+    if (state.ownership[propertyId] !== playerId) {
+      return total
+    }
+
+    return total + buildings.houses * houseCost + buildings.hotels * hotelCost
+  }, 0)
+}
+
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
     case 'roll-dice':
@@ -340,6 +355,26 @@ export const gameReducer: GameReducer = (state, action) => {
             payerId: currentPlayer.id,
             payeeId: opponent.id,
             amount: effect.amount,
+            reason: 'card',
+          })
+        }
+      } else if (effect?.type === 'repairs') {
+        const amount = calculatePropertyRepairCost(
+          state,
+          currentPlayer.id,
+          effect.houseCost,
+          effect.hotelCost,
+        )
+
+        if (amount > 0) {
+          players = state.players.map((player) =>
+            player.id === currentPlayer.id ? { ...player, cash: player.cash - amount } : player,
+          )
+          events.push({
+            type: 'payment',
+            payerId: currentPlayer.id,
+            payeeId: null,
+            amount,
             reason: 'card',
           })
         }

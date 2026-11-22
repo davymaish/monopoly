@@ -37,6 +37,13 @@ export type HeldJailFreeCard = DrawnCard
 
 export type PropertyOwnership = Record<string, PlayerId | null>
 
+export interface PropertyBuildingCounts {
+  houses: number
+  hotels: number
+}
+
+export type PropertyBuildings = Record<string, PropertyBuildingCounts>
+
 export interface CardDeckState {
   chance: string[]
   communityChest: string[]
@@ -122,6 +129,7 @@ export interface GameState {
   players: Player[]
   currentPlayerIndex: number
   ownership: PropertyOwnership
+  propertyBuildings: PropertyBuildings
   mortgagedProperties: string[]
   auction: AuctionState | null
   landingResolution: LandingResolution | null

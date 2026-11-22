@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BOARD_SPACES } from '../game/board'
 import { createInitialGameState, STARTING_CASH } from '../game/initial-state'
+import { STREET_PROPERTIES } from '../game/street-data'
 
 const twoPlayerSetup = {
   playerCount: 2 as const,
@@ -45,6 +46,14 @@ describe('createInitialGameState', () => {
 
     expect(Object.keys(state.ownership).sort()).toEqual(purchasableIds.sort())
     expect(Object.values(state.ownership).every((ownerId) => ownerId === null)).toBe(true)
+    expect(Object.keys(state.propertyBuildings).sort()).toEqual(
+      STREET_PROPERTIES.map(({ id }) => id).sort(),
+    )
+    expect(
+      Object.values(state.propertyBuildings).every(
+        ({ houses, hotels }) => houses === 0 && hotels === 0,
+      ),
+    ).toBe(true)
     expect(state.mortgagedProperties).toEqual([])
     expect(state.auction).toBeNull()
     expect(state.landingResolution).toBeNull()
