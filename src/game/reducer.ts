@@ -6,6 +6,7 @@ import type { AuctionState, GameLogEvent, GameState, PlayerId } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 import { getPurchasableDeedById } from './purchasable'
 import { calculateRailroadRent, calculateStreetRent, calculateUtilityPropertyRent } from './rent'
+import { calculateTaxAmount } from './tax'
 
 function finishAuction(state: GameState, auction: AuctionState): GameState {
   const winner = auction.highBidderId
@@ -191,9 +192,40 @@ export const gameReducer: GameReducer = (state, action) => {
         log: appendGameLog(state.log, events),
       }
     }
+    case 'pay-tax': {
+      const resolution = state.landingResolution
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const amount =
+        resolution?.type === 'tax' && currentPlayer
+          ? calculateTaxAmount(state, currentPlayer.id, resolution.tax, action.choice)
+          : null
+
+      if (
+        state.phase !== 'awaiting-player-action' ||
+        resolution?.type !== 'tax' ||
+        !currentPlayer ||
+        amount === null ||
+        !Number.isFinite(amount) ||
+        amount < 0
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        players: state.players.map((player, index) =>
+          index === state.currentPlayerIndex ? { ...player, cash: player.cash - amount } : player,
+        ),
+        landingResolution: null,
+        log: appendGameLog(state.log, [
+          { type: 'payment', payerId: currentPlayer.id, payeeId: null, amount, reason: 'tax' },
+        ]),
+      }
+    }
     case 'end-turn': {
       if (
         state.phase !== 'awaiting-player-action' ||
+        state.landingResolution?.type === 'tax' ||
         state.players.length === 0 ||
         !Number.isInteger(state.currentPlayerIndex) ||
         state.currentPlayerIndex < 0 ||

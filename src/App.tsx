@@ -3,6 +3,7 @@ import AuctionPrompt from './components/AuctionPrompt'
 import BoardPerimeter from './components/BoardPerimeter'
 import DiceDisplay from './components/DiceDisplay'
 import PurchasePrompt from './components/PurchasePrompt'
+import TaxPrompt from './components/TaxPrompt'
 import PropertyDetailCard from './components/PropertyDetailCard'
 import type { PropertyDeed } from './components/PropertyDetailCard'
 import PlayerCountSelector from './components/PlayerCountSelector'
@@ -16,6 +17,7 @@ import { validateSetup } from './setup/validation'
 import { createInitialGameState, type InitialGameState } from './game/initial-state'
 import { rollDice } from './game/dice'
 import { gameReducer } from './game/reducer'
+import type { TaxPaymentChoice } from './game/model'
 
 export default function App(): ReactElement {
   const [selectedDeed, setSelectedDeed] = useState<PropertyDeed | null>(null)
@@ -112,6 +114,12 @@ export default function App(): ReactElement {
     )
   }
 
+  function handlePayTax(choice: TaxPaymentChoice) {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'pay-tax', choice }) : currentState,
+    )
+  }
+
   const setupValidation = validateSetup({
     playerCount,
     playerNames,
@@ -151,6 +159,7 @@ export default function App(): ReactElement {
               onBid={handleAuctionBid}
               onPass={handleAuctionPass}
             />
+            <TaxPrompt gameState={gameState} onPayTax={handlePayTax} />
             <DiceDisplay dice={gameState.dice} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
