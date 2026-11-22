@@ -25,6 +25,37 @@ describe('board perimeter', () => {
     expect(getBoardGridCoordinates(30)).toEqual({ row: 0, column: 10 })
   })
 
+  it('renders four distinct upright corner treatments with accessible board names', () => {
+    const { container } = render(<BoardPerimeter />)
+    const cornerTiles = Array.from(
+      container.querySelectorAll<HTMLElement>('.board-tile[data-corner]'),
+    )
+    const expectedCorners = [
+      { position: 0, kind: 'go', name: 'GO', mark: 'GO' },
+      { position: 10, kind: 'jail', name: 'Jail / Just Visiting', mark: 'JAIL' },
+      { position: 20, kind: 'free-parking', name: 'Free Parking', mark: 'P' },
+      { position: 30, kind: 'go-to-jail', name: 'Go to Jail', mark: 'GO TO' },
+    ]
+
+    expect(cornerTiles).toHaveLength(4)
+    expect(cornerTiles.map((tile) => Number(tile.dataset.position))).toEqual(
+      expectedCorners.map((corner) => corner.position),
+    )
+
+    expectedCorners.forEach(({ position, kind, name, mark }) => {
+      const tile = cornerTiles.find(
+        (cornerTile) => Number(cornerTile.dataset.position) === position,
+      )
+
+      expect(tile).toHaveAttribute('data-corner', kind)
+      expect(tile).toHaveClass('board-tile--corner', `board-tile--corner-${kind}`)
+      expect(tile).toHaveAttribute('aria-label', `${name}, space ${position + 1}`)
+      expect(tile?.querySelector('.board-corner-mark')).toHaveTextContent(mark)
+      expect(tile?.querySelector('.board-tile-name')).not.toBeInTheDocument()
+      expect(screen.getByRole('listitem', { name: `${name}, space ${position + 1}` })).toBe(tile)
+    })
+  })
+
   it('renders the top ten spaces in order with labels and property group colors', () => {
     const { container } = render(<BoardPerimeter />)
     const topTiles = Array.from(
@@ -44,7 +75,14 @@ describe('board perimeter', () => {
 
       expect(tile).toHaveAttribute('data-grid-row', '0')
       expect(tile).toHaveAttribute('data-grid-column', String(index))
-      expect(tile.querySelector('.board-tile-name')).toHaveTextContent(space.name)
+
+      if (space.position === 20) {
+        expect(tile.querySelector('.board-corner-content')).toHaveClass(
+          'board-corner-content--free-parking',
+        )
+      } else {
+        expect(tile.querySelector('.board-tile-name')).toHaveTextContent(space.name)
+      }
 
       if (space.kind === 'property') {
         expect(tile).toHaveAttribute('data-group', space.group)
@@ -76,8 +114,15 @@ describe('board perimeter', () => {
 
       expect(tile).toHaveAttribute('data-grid-row', String(index))
       expect(tile).toHaveAttribute('data-grid-column', '10')
-      expect(name).toHaveTextContent(space.name)
-      expect(name).toHaveClass('board-tile-name--right')
+
+      if (space.position === 30) {
+        expect(tile.querySelector('.board-corner-content')).toHaveClass(
+          'board-corner-content--go-to-jail',
+        )
+      } else {
+        expect(name).toHaveTextContent(space.name)
+        expect(name).toHaveClass('board-tile-name--right')
+      }
 
       if (space.kind === 'property') {
         expect(tile).toHaveAttribute('data-group', space.group)
@@ -109,8 +154,13 @@ describe('board perimeter', () => {
 
       expect(tile).toHaveAttribute('data-grid-row', '10')
       expect(tile).toHaveAttribute('data-grid-column', String(10 - index))
-      expect(name).toHaveTextContent(space.name)
-      expect(name).toHaveClass('board-tile-name--bottom')
+
+      if (space.position === 0) {
+        expect(tile.querySelector('.board-corner-content')).toHaveClass('board-corner-content--go')
+      } else {
+        expect(name).toHaveTextContent(space.name)
+        expect(name).toHaveClass('board-tile-name--bottom')
+      }
 
       if (space.kind === 'property') {
         expect(tile).toHaveAttribute('data-group', space.group)
@@ -142,8 +192,15 @@ describe('board perimeter', () => {
 
       expect(tile).toHaveAttribute('data-grid-row', String(10 - index))
       expect(tile).toHaveAttribute('data-grid-column', '0')
-      expect(name).toHaveTextContent(space.name)
-      expect(name).toHaveClass('board-tile-name--left')
+
+      if (space.position === 10) {
+        expect(tile.querySelector('.board-corner-content')).toHaveClass(
+          'board-corner-content--jail',
+        )
+      } else {
+        expect(name).toHaveTextContent(space.name)
+        expect(name).toHaveClass('board-tile-name--left')
+      }
 
       if (space.kind === 'property') {
         expect(tile).toHaveAttribute('data-group', space.group)
@@ -160,7 +217,7 @@ describe('board perimeter', () => {
 
     expect(screen.getByRole('list', { name: 'Monopoly board' })).toBeInTheDocument()
     expect(screen.getAllByRole('listitem')).toHaveLength(40)
-    expect(document.querySelectorAll('.board-tile-name')).toHaveLength(40)
+    expect(document.querySelectorAll('.board-tile-name, .board-corner-content')).toHaveLength(40)
     expect(screen.getByRole('listitem', { name: 'GO, space 1' })).toHaveAttribute(
       'data-grid-row',
       '10',

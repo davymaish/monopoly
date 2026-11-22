@@ -46,8 +46,16 @@ export default function BoardPerimeter() {
               : isRightEdge
                 ? 'right'
                 : undefined
+        const corner =
+          space.kind === 'corner'
+            ? space.corner
+            : space.kind === 'parking'
+              ? 'free-parking'
+              : undefined
         const isProperty = space.kind === 'property'
-        const tileClassName = edge ? `board-tile board-tile--${edge}` : 'board-tile'
+        const tileClassName = `${edge ? `board-tile board-tile--${edge}` : 'board-tile'}${
+          corner ? ` board-tile--corner board-tile--corner-${corner}` : ''
+        }`
 
         return (
           <div
@@ -60,32 +68,62 @@ export default function BoardPerimeter() {
             data-grid-column={column}
             data-kind={space.kind}
             data-edge={edge}
+            data-corner={corner}
             data-group={isProperty ? space.group : undefined}
             style={{ gridRow: row + 1, gridColumn: column + 1 }}
           >
-            {isBottomEdge && (
-              <span className="board-tile-bottom-content" aria-hidden="true">
-                <span className="board-tile-name board-tile-name--bottom">{space.name}</span>
-                {isProperty && <span className="board-tile-band board-tile-band--bottom" />}
+            {corner ? (
+              <span
+                className={`board-corner-content board-corner-content--${corner}`}
+                aria-hidden="true"
+              >
+                {corner === 'go' && <span className="board-corner-mark">GO</span>}
+                {corner === 'jail' && (
+                  <>
+                    <span className="board-corner-mark">JAIL</span>
+                    <span className="board-corner-detail">JUST VISITING</span>
+                  </>
+                )}
+                {corner === 'free-parking' && (
+                  <>
+                    <span className="board-corner-mark">P</span>
+                    <span className="board-corner-detail">FREE PARKING</span>
+                  </>
+                )}
+                {corner === 'go-to-jail' && (
+                  <>
+                    <span className="board-corner-mark">GO TO</span>
+                    <span className="board-corner-detail">JAIL</span>
+                  </>
+                )}
               </span>
-            )}
-            {isLeftEdge && (
-              <span className="board-tile-left-content" aria-hidden="true">
-                {isProperty && <span className="board-tile-band board-tile-band--left" />}
-                <span className="board-tile-name board-tile-name--left">{space.name}</span>
-              </span>
-            )}
-            {isTopEdge && (
-              <span className="board-tile-top-content" aria-hidden="true">
-                {isProperty && <span className="board-tile-band" />}
-                <span className="board-tile-name">{space.name}</span>
-              </span>
-            )}
-            {isRightEdge && (
-              <span className="board-tile-right-content" aria-hidden="true">
-                <span className="board-tile-name board-tile-name--right">{space.name}</span>
-                {isProperty && <span className="board-tile-band board-tile-band--right" />}
-              </span>
+            ) : (
+              <>
+                {isBottomEdge && (
+                  <span className="board-tile-bottom-content" aria-hidden="true">
+                    <span className="board-tile-name board-tile-name--bottom">{space.name}</span>
+                    {isProperty && <span className="board-tile-band board-tile-band--bottom" />}
+                  </span>
+                )}
+                {isLeftEdge && (
+                  <span className="board-tile-left-content" aria-hidden="true">
+                    {isProperty && <span className="board-tile-band board-tile-band--left" />}
+                    <span className="board-tile-name board-tile-name--left">{space.name}</span>
+                  </span>
+                )}
+                {isTopEdge && (
+                  <span className="board-tile-top-content" aria-hidden="true">
+                    {isProperty && <span className="board-tile-band" />}
+                    <span className="board-tile-name">{space.name}</span>
+                  </span>
+                )}
+                {isRightEdge && (
+                  <span className="board-tile-right-content" aria-hidden="true">
+                    <span className="board-tile-name board-tile-name--right">{space.name}</span>
+                    {isProperty && <span className="board-tile-band board-tile-band--right" />}
+                  </span>
+                )}
+              </>
             )}
           </div>
         )
