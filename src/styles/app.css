@@ -235,6 +235,22 @@ body {
   margin-top: var(--space-4);
 }
 
+.auction-bid-field {
+  display: grid;
+  gap: var(--space-1);
+  align-content: center;
+  font-weight: var(--font-weight-bold);
+}
+
+.auction-bid-field input {
+  min-height: 3rem;
+  width: 9rem;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
 .purchase-prompt-button {
   min-height: 3rem;
   padding: var(--space-2) var(--space-5);

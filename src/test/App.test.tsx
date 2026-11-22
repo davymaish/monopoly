@@ -121,7 +121,7 @@ describe('App shell', () => {
     }
   })
 
-  it('declines an offered property without charging cash and then allows the turn to end', () => {
+  it('starts an auction when a property is declined and resumes after a winning bid', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
 
     try {
@@ -133,8 +133,26 @@ describe('App shell', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Decline purchase' }))
 
       expect(screen.queryByRole('region', { name: 'Property purchase' })).not.toBeInTheDocument()
-      expect(screen.getAllByText('$1,500')).toHaveLength(2)
+      const auction = screen.getByRole('region', { name: 'Property auction' })
+      expect(within(auction).getByText('Vermont Avenue')).toBeInTheDocument()
+      expect(within(auction).getByText(/Player 2 is bidding/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'Bid amount' }), {
+        target: { value: '50' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Bid' }))
+      expect(within(auction).getByText(/Current bid: \$50 by Player 2/)).toBeInTheDocument()
+      expect(within(auction).getByText(/Player 1 is bidding/)).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Pass' }))
+
+      expect(screen.queryByRole('region', { name: 'Property auction' })).not.toBeInTheDocument()
+      expect(screen.getByText('$1,450')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      expect(
+        screen.getByRole('listitem', { name: 'Vermont Avenue, space 9, owned by Player 2' }),
+      ).toHaveAttribute('data-owner-id', 'player-2')
       expect(
         within(screen.getByRole('list', { name: 'Recent activity' })).queryByText(/paid \$100/),
       ).not.toBeInTheDocument()

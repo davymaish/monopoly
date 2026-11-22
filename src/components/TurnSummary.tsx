@@ -40,6 +40,13 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
         BOARD_SPACES.find((space) => space.id === event.propertyId)?.name ?? event.propertyId
       return `${getPlayerName(players, event.payerId)} landed on ${propertyName}; no rent was paid to ${getPlayerName(players, event.ownerId)} because it is mortgaged.`
     }
+    case 'auction-ended': {
+      const propertyName =
+        BOARD_SPACES.find((space) => space.id === event.propertyId)?.name ?? event.propertyId
+      return event.winnerId
+        ? `${getPlayerName(players, event.winnerId)} won ${propertyName} at auction for ${formatCash(event.amount)}.`
+        : `The auction for ${propertyName} ended with no bids.`
+    }
     case 'turn-change':
       return `${getPlayerName(players, event.fromPlayerId)} ended their turn. ${getPlayerName(players, event.toPlayerId)} is up next.`
   }
