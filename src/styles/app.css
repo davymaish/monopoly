@@ -171,6 +171,51 @@ body {
   outline-offset: var(--focus-ring-offset);
 }
 
+.player-name-fields {
+  margin: var(--space-5) 0 0;
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.player-name-legend {
+  padding: 0;
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.player-name-help {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--color-muted);
+}
+
+.player-name-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-3);
+}
+
+.player-name-field {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.player-name-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+}
+
 .board-perimeter {
   display: grid;
   width: min(100%, 58rem);
