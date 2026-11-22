@@ -54,6 +54,9 @@ describe('App shell', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Dice rolled. Movement resolution is pending.',
     )
+    const diceRegion = screen.getByRole('region', { name: 'Dice result' })
+    expect(within(diceRegion).getAllByRole('img')).toHaveLength(2)
+    expect(within(diceRegion).getByText('Total').parentElement).toHaveTextContent(/\d+/)
   })
 
   it('trims entered names and replaces blank names with their player defaults', () => {
