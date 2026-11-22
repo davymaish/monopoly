@@ -53,6 +53,33 @@ describe('gameReducer skeleton', () => {
     expect(gameReducer(state, { type: 'move-player' })).toBe(state)
   })
 
+  it('awards $200 only when movement passes GO', () => {
+    const initialState = createInitialGameState(setup)
+    const nearGoState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 39 } : player,
+      ),
+    }
+    const rolledState = gameReducer(nearGoState, { type: 'roll-dice', dice: [1, 2] })
+    const movedState = gameReducer(rolledState, { type: 'move-player' })
+
+    expect(movedState.players[0]).toMatchObject({ position: 2, cash: 1700 })
+    expect(movedState.players[1]).toMatchObject({ position: 0, cash: 1500 })
+    expect(nearGoState.players[0]).toMatchObject({ position: 39, cash: 1500 })
+
+    const noWrapState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 10 } : player,
+      ),
+    }
+    const noWrapRoll = gameReducer(noWrapState, { type: 'roll-dice', dice: [1, 2] })
+    const noWrapMove = gameReducer(noWrapRoll, { type: 'move-player' })
+
+    expect(noWrapMove.players[0]).toMatchObject({ position: 13, cash: 1500 })
+  })
+
   it('preserves the current state for an unknown or malformed action', () => {
     const state = createInitialGameState(setup)
     const invalidAction = { type: 'skip-turn', extra: true } as unknown as GameAction
