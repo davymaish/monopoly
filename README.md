@@ -23,6 +23,8 @@ The command invokes the pinned pnpm version and fails rather than rewriting the 
 
 After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm typecheck` to check the strict TypeScript source, `pnpm format` to apply formatting, `pnpm format:check` to verify formatting, `pnpm lint` to run ESLint, `pnpm test` to run Vitest, and `pnpm build` to create production output in `dist/`.
 
+GitHub Actions runs the frozen install, format check, lint, type-check, tests, and production build on pull requests to `main` and pushes to `main`.
+
 ## Project layout
 
 The current entry points are `src/main.tsx` and `src/App.tsx`; the source will expand by responsibility:
@@ -41,4 +43,4 @@ The `src/` tree will expand across the roadmap. The repository root contains sha
 - `.editorconfig` defines consistent UTF-8, LF line endings, final newlines, and two-space indentation.
 - `LICENSE` currently provides the MIT license.
 
-Vite, typed React/TypeScript, and formatting/lint/test commands are available; CI and game functionality remain later roadmap milestones.
+Vite, typed React/TypeScript, formatting, lint, and test commands are available; game functionality remains later roadmap milestones.
