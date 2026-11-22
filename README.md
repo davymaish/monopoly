@@ -9,6 +9,16 @@ An in-progress browser-based, local pass-and-play Monopoly game for 2–4 player
 - Vitest and React Testing Library
 - Local play only: no accounts, backend, or online multiplayer
 
+## Toolchain and installation
+
+Use the Node.js version pinned in `.nvmrc` (26.13.1). `package.json` pins pnpm to 12.21.0. Install dependencies from the committed lockfile with this single command:
+
+```sh
+npm exec --yes --package=pnpm@12.21.0 -- pnpm install --frozen-lockfile
+```
+
+The command invokes the pinned pnpm version and fails rather than rewriting the lockfile.
+
 ## Project layout
 
 The application source will live under `src/`, organized by responsibility:
@@ -27,4 +37,4 @@ The `src/` tree will be added when the application shell is introduced. The repo
 - `.editorconfig` defines consistent UTF-8, LF line endings, final newlines, and two-space indentation.
 - `LICENSE` currently provides the MIT license.
 
-No package scripts or tests are available yet; toolchain and application setup are scheduled as later roadmap milestones.
+The Node/pnpm toolchain is pinned; application dependencies, scripts, tests, and CI are scheduled for later roadmap milestones.
