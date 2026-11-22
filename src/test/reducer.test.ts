@@ -343,11 +343,109 @@ describe('gameReducer skeleton', () => {
     })
 
     expect(declinedState.landingResolution).toBeNull()
+    expect(declinedState.phase).toBe('auction')
+    expect(declinedState.auction).toEqual({
+      propertyId: 'vermont-avenue',
+      biddingOrder: ['player-2', 'player-1'],
+      activeBidderId: 'player-2',
+      highBid: 0,
+      highBidderId: null,
+      passedPlayerIds: [],
+    })
     expect(declinedState.players[0]?.cash).toBe(1500)
     expect(declinedState.ownership['vermont-avenue']).toBeNull()
+    expect(
+      gameReducer(declinedState, { type: 'decline-purchase', propertyId: 'vermont-avenue' }),
+    ).toBe(declinedState)
     expect(gameReducer(state, { type: 'decline-purchase', propertyId: 'baltic-avenue' })).toBe(
       state,
     )
+  })
+
+  it('rotates a four-player auction so bidding starts with the next player', () => {
+    const initialState = createInitialGameState({
+      playerCount: 4,
+      playerNames: ['Alex', 'Jordan', 'Casey', 'Morgan'],
+      playerColors: ['red', 'blue', 'green', 'purple'],
+    })
+    const nearPropertyState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 4 } : player,
+      ),
+    }
+    const rolledState = gameReducer(nearPropertyState, { type: 'roll-dice', dice: [2, 2] })
+    const landedState = gameReducer(rolledState, { type: 'move-player' })
+    const auctionState = gameReducer(landedState, {
+      type: 'decline-purchase',
+      propertyId: 'vermont-avenue',
+    })
+
+    expect(auctionState.auction).toMatchObject({
+      biddingOrder: ['player-2', 'player-3', 'player-4', 'player-1'],
+      activeBidderId: 'player-2',
+    })
+  })
+
+  it('rejects invalid bids and awards the property to the valid high bidder', () => {
+    const landingState = createVermontPurchaseState()
+    const auctionState = gameReducer(landingState, {
+      type: 'decline-purchase',
+      propertyId: 'vermont-avenue',
+    })
+    const overCashState = gameReducer(auctionState, { type: 'auction-bid', amount: 1501 })
+    const zeroBidState = gameReducer(auctionState, { type: 'auction-bid', amount: 0 })
+
+    expect(overCashState).toBe(auctionState)
+    expect(zeroBidState).toBe(auctionState)
+
+    const highBidState = gameReducer(auctionState, { type: 'auction-bid', amount: 50 })
+    expect(highBidState.auction).toMatchObject({ highBid: 50, highBidderId: 'player-2' })
+    expect(highBidState.auction?.activeBidderId).toBe('player-1')
+
+    const awardedState = gameReducer(highBidState, { type: 'auction-pass' })
+    expect(awardedState.phase).toBe('awaiting-player-action')
+    expect(awardedState.auction).toBeNull()
+    expect(awardedState.ownership['vermont-avenue']).toBe('player-2')
+    expect(awardedState.players[0]?.cash).toBe(1500)
+    expect(awardedState.players[1]?.cash).toBe(1450)
+    expect(awardedState.log.slice(-2).map(({ event }) => event)).toEqual([
+      {
+        type: 'payment',
+        payerId: 'player-2',
+        payeeId: null,
+        amount: 50,
+        reason: 'property-purchase',
+      },
+      {
+        type: 'auction-ended',
+        propertyId: 'vermont-avenue',
+        winnerId: 'player-2',
+        amount: 50,
+      },
+    ])
+  })
+
+  it('closes a no-bid auction and returns the turn without transferring the deed', () => {
+    const landingState = createVermontPurchaseState()
+    const auctionState = gameReducer(landingState, {
+      type: 'decline-purchase',
+      propertyId: 'vermont-avenue',
+    })
+    const firstPass = gameReducer(auctionState, { type: 'auction-pass' })
+    const noBidState = gameReducer(firstPass, { type: 'auction-pass' })
+
+    expect(firstPass.auction?.activeBidderId).toBe('player-1')
+    expect(noBidState.phase).toBe('awaiting-player-action')
+    expect(noBidState.auction).toBeNull()
+    expect(noBidState.ownership['vermont-avenue']).toBeNull()
+    expect(noBidState.players.map(({ cash }) => cash)).toEqual([1500, 1500])
+    expect(noBidState.log.at(-1)?.event).toEqual({
+      type: 'auction-ended',
+      propertyId: 'vermont-avenue',
+      winnerId: null,
+      amount: 0,
+    })
   })
 
   it('preserves the current state for an unknown or malformed action', () => {
