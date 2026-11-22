@@ -10,12 +10,10 @@ describe('App shell', () => {
     expect(screen.getByRole('main')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Monopoly' })).toBeInTheDocument()
   })
-})
 
-describe('App', () => {
-  it('renders the placeholder message', () => {
+  it('renders the board perimeter', () => {
     render(<App />)
 
-    expect(screen.getByText('Game interface is being built.')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Monopoly board' })).toBeInTheDocument()
   })
 })
