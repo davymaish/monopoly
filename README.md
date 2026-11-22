@@ -21,7 +21,7 @@ The command invokes the pinned pnpm version and fails rather than rewriting the 
 
 ## Run and build
 
-After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm typecheck` to check the strict TypeScript source, and `pnpm build` to create production output in `dist/`.
+After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm typecheck` to check the strict TypeScript source, `pnpm format` to apply formatting, `pnpm format:check` to verify formatting, `pnpm lint` to run ESLint, and `pnpm build` to create production output in `dist/`.
 
 ## Project layout
 
