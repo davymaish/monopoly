@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactElement } from 'react'
 import BoardPerimeter from './components/BoardPerimeter'
+import DiceDisplay from './components/DiceDisplay'
 import PropertyDetailCard from './components/PropertyDetailCard'
 import type { PropertyDeed } from './components/PropertyDetailCard'
 import PlayerCountSelector from './components/PlayerCountSelector'
@@ -91,6 +92,7 @@ export default function App(): ReactElement {
             <h2 id="game-screen-heading">Game board</h2>
             <PlayerPanel gameState={gameState} />
             <RollDiceControl onRollDice={handleRollDice} phase={gameState.phase} />
+            <DiceDisplay dice={gameState.dice} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
               players={gameState.players}
