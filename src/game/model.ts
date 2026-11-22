@@ -12,7 +12,6 @@ export interface Player {
   color: PlayerColor
   cash: number
   position: number
-  ownedPropertyIds: string[]
   getOutOfJailFreeCardCount: number
 }
 
