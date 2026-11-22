@@ -34,9 +34,18 @@ export default function BoardPerimeter() {
       {BOARD_SPACES.map((space) => {
         const { row, column } = getBoardGridCoordinates(space.position)
         const isBottomEdge = space.position < 10
+        const isLeftEdge = space.position >= 10 && space.position < 20
         const isTopEdge = space.position >= 20 && space.position < 30
         const isRightEdge = space.position >= 30
-        const edge = isBottomEdge ? 'bottom' : isTopEdge ? 'top' : isRightEdge ? 'right' : undefined
+        const edge = isBottomEdge
+          ? 'bottom'
+          : isLeftEdge
+            ? 'left'
+            : isTopEdge
+              ? 'top'
+              : isRightEdge
+                ? 'right'
+                : undefined
         const isProperty = space.kind === 'property'
         const tileClassName = edge ? `board-tile board-tile--${edge}` : 'board-tile'
 
@@ -58,6 +67,12 @@ export default function BoardPerimeter() {
               <span className="board-tile-bottom-content" aria-hidden="true">
                 <span className="board-tile-name board-tile-name--bottom">{space.name}</span>
                 {isProperty && <span className="board-tile-band board-tile-band--bottom" />}
+              </span>
+            )}
+            {isLeftEdge && (
+              <span className="board-tile-left-content" aria-hidden="true">
+                {isProperty && <span className="board-tile-band board-tile-band--left" />}
+                <span className="board-tile-name board-tile-name--left">{space.name}</span>
               </span>
             )}
             {isTopEdge && (
