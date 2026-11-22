@@ -80,6 +80,24 @@ describe('gameReducer skeleton', () => {
     expect(noWrapMove.players[0]).toMatchObject({ position: 13, cash: 1500 })
   })
 
+  it('advances through all players in order and safely wraps to the first player', () => {
+    let state = createInitialGameState({
+      playerCount: 4,
+      playerNames: ['Alex', 'Jordan', 'Casey', 'Morgan'],
+      playerColors: ['red', 'blue', 'green', 'purple'],
+    })
+
+    for (let turn = 0; turn < 4; turn += 1) {
+      const rolledState = gameReducer(state, { type: 'roll-dice', dice: [1, 1] })
+      const movedState = gameReducer(rolledState, { type: 'move-player' })
+      state = gameReducer(movedState, { type: 'end-turn' })
+
+      expect(state.currentPlayerIndex).toBe((turn + 1) % 4)
+      expect(state.phase).toBe('awaiting-roll')
+      expect(state.dice).toBeNull()
+    }
+  })
+
   it('preserves the current state for an unknown or malformed action', () => {
     const state = createInitialGameState(setup)
     const invalidAction = { type: 'skip-turn', extra: true } as unknown as GameAction
