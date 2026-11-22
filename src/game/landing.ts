@@ -6,6 +6,7 @@ export function resolveLanding(
   ownership: PropertyOwnership,
   playerIds: readonly PlayerId[],
   currentPlayerId: PlayerId,
+  mortgagedProperties: readonly string[] = [],
 ): LandingResolution {
   if (!space) {
     return {
@@ -48,23 +49,35 @@ export function resolveLanding(
         }
       }
 
-      return ownerId === currentPlayerId
-        ? {
-            type: 'owned-property',
-            spaceId: space.id,
-            spaceName: space.name,
-            ownerId,
-            ownedByCurrentPlayer: true,
-            legalActions: ['continue'],
-          }
-        : {
-            type: 'owned-property',
-            spaceId: space.id,
-            spaceName: space.name,
-            ownerId,
-            ownedByCurrentPlayer: false,
-            legalActions: ['pay-rent'],
-          }
+      if (ownerId === currentPlayerId) {
+        return {
+          type: 'owned-property',
+          spaceId: space.id,
+          spaceName: space.name,
+          ownerId,
+          ownedByCurrentPlayer: true,
+          legalActions: ['continue'],
+        }
+      }
+
+      if (mortgagedProperties.includes(space.id)) {
+        return {
+          type: 'mortgaged-property',
+          spaceId: space.id,
+          spaceName: space.name,
+          ownerId,
+          legalActions: ['continue'],
+        }
+      }
+
+      return {
+        type: 'owned-property',
+        spaceId: space.id,
+        spaceName: space.name,
+        ownerId,
+        ownedByCurrentPlayer: false,
+        legalActions: ['pay-rent'],
+      }
     }
     case 'tax':
       return { type: 'tax', spaceId: space.id, tax: space.tax, legalActions: ['pay-tax'] }

@@ -58,6 +58,23 @@ describe('resolveLanding', () => {
     })
   })
 
+  it('does not offer rent when the opponent-owned property is mortgaged', () => {
+    const ownership = {
+      ...createInitialPropertyOwnership(),
+      'mediterranean-avenue': 'player-2',
+    }
+
+    expect(
+      resolveLanding(getSpace('mediterranean-avenue'), ownership, playerIds, 'player-1', [
+        'mediterranean-avenue',
+      ]),
+    ).toMatchObject({
+      type: 'mortgaged-property',
+      ownerId: 'player-2',
+      legalActions: ['continue'],
+    })
+  })
+
   it('returns safe fallback outcomes for missing spaces or invalid ownership data', () => {
     const ownership = createInitialPropertyOwnership()
     const missingOwnership = { ...ownership }
