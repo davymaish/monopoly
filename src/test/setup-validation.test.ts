@@ -29,6 +29,18 @@ describe('validateSetup', () => {
     expect(result.playerNameErrors[0]).toBe('Enter a name for this player.')
   })
 
+  it('reports missing setup values for every active player', () => {
+    const result = validateSetup({
+      playerCount: 2,
+      playerNames: ['Alex'],
+      playerColors: ['red'],
+      availableColorIds,
+    })
+
+    expect(result.playerNameErrors).toEqual([null, 'Enter a name for this player.'])
+    expect(result.playerColorErrors).toEqual([null, 'Choose a valid token color.'])
+  })
+
   it('rejects overlong or duplicate names without changing their values', () => {
     const result = validateSetup({
       playerCount: 3,
