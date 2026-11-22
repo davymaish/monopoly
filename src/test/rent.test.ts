@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialPropertyOwnership } from '../game/ownership'
-import { calculateRailroadRent, calculateStreetRent } from '../game/rent'
+import {
+  calculateRailroadRent,
+  calculateStreetRent,
+  calculateUtilityPropertyRent,
+} from '../game/rent'
 
 describe('calculateStreetRent', () => {
   it('returns the printed base rent for an owned street without a complete group', () => {
@@ -80,5 +84,43 @@ describe('calculateRailroadRent', () => {
     expect(calculateRailroadRent('reading-railroad', ownership)).toBe(0)
     expect(calculateRailroadRent('unknown-property', ownership)).toBe(0)
     expect(calculateRailroadRent('vermont-avenue', ownership)).toBe(0)
+  })
+})
+
+describe('calculateUtilityPropertyRent', () => {
+  it('uses four times the dice total when the owner holds one utility', () => {
+    const ownership = {
+      ...createInitialPropertyOwnership(),
+      'electric-company': 'player-1',
+    }
+
+    expect(calculateUtilityPropertyRent('electric-company', ownership, 7)).toBe(28)
+  })
+
+  it('uses ten times the dice total when the owner holds both utilities', () => {
+    const ownership = {
+      ...createInitialPropertyOwnership(),
+      'electric-company': 'player-1',
+      'water-works': 'player-1',
+    }
+
+    expect(calculateUtilityPropertyRent('electric-company', ownership, 7)).toBe(70)
+  })
+
+  it('uses the nearest-utility card multiplier regardless of the normal utility count', () => {
+    const ownership = {
+      ...createInitialPropertyOwnership(),
+      'electric-company': 'player-1',
+    }
+
+    expect(calculateUtilityPropertyRent('electric-company', ownership, 7, true)).toBe(70)
+  })
+
+  it('returns zero for unowned, unknown, or non-utility deeds', () => {
+    const ownership = createInitialPropertyOwnership()
+
+    expect(calculateUtilityPropertyRent('electric-company', ownership, 7)).toBe(0)
+    expect(calculateUtilityPropertyRent('unknown-property', ownership, 7)).toBe(0)
+    expect(calculateUtilityPropertyRent('vermont-avenue', ownership, 7)).toBe(0)
   })
 })
