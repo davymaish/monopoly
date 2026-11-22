@@ -286,30 +286,63 @@ export const gameReducer: GameReducer = (state, action) => {
 
       const deckKey = pendingCard.deck === 'chance' ? 'chance' : 'communityChest'
       const card = getCardDefinition(pendingCard.deck, pendingCard.cardId)
-      const cashEffect = card?.effect.type === 'cash' ? card.effect : null
-      const cashChange =
-        cashEffect?.direction === 'collect'
-          ? cashEffect.amount
-          : cashEffect?.direction === 'pay'
-            ? -cashEffect.amount
-            : 0
+      const effect = card?.effect
+      const opponents = state.players.filter((player) => player.id !== currentPlayer.id)
+      let players = state.players
       const events: GameLogEvent[] = []
 
-      if (cashEffect?.direction === 'collect') {
-        events.push({
-          type: 'income',
-          playerId: currentPlayer.id,
-          amount: cashEffect.amount,
-          reason: 'card',
-        })
-      } else if (cashEffect?.direction === 'pay') {
-        events.push({
-          type: 'payment',
-          payerId: currentPlayer.id,
-          payeeId: null,
-          amount: cashEffect.amount,
-          reason: 'card',
-        })
+      if (effect?.type === 'cash') {
+        const cashChange = effect.direction === 'collect' ? effect.amount : -effect.amount
+        players = state.players.map((player) =>
+          player.id === currentPlayer.id ? { ...player, cash: player.cash + cashChange } : player,
+        )
+
+        if (effect.direction === 'collect') {
+          events.push({
+            type: 'income',
+            playerId: currentPlayer.id,
+            amount: effect.amount,
+            reason: 'card',
+          })
+        } else {
+          events.push({
+            type: 'payment',
+            payerId: currentPlayer.id,
+            payeeId: null,
+            amount: effect.amount,
+            reason: 'card',
+          })
+        }
+      } else if (effect?.type === 'collect-from-each-opponent') {
+        players = state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? { ...player, cash: player.cash + effect.amount * opponents.length }
+            : { ...player, cash: player.cash - effect.amount },
+        )
+        for (const opponent of opponents) {
+          events.push({
+            type: 'payment',
+            payerId: opponent.id,
+            payeeId: currentPlayer.id,
+            amount: effect.amount,
+            reason: 'card',
+          })
+        }
+      } else if (effect?.type === 'pay-each-opponent') {
+        players = state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? { ...player, cash: player.cash - effect.amount * opponents.length }
+            : { ...player, cash: player.cash + effect.amount },
+        )
+        for (const opponent of opponents) {
+          events.push({
+            type: 'payment',
+            payerId: currentPlayer.id,
+            payeeId: opponent.id,
+            amount: effect.amount,
+            reason: 'card',
+          })
+        }
       }
 
       events.push({
@@ -321,14 +354,7 @@ export const gameReducer: GameReducer = (state, action) => {
 
       return {
         ...state,
-        players:
-          cashChange === 0
-            ? state.players
-            : state.players.map((player) =>
-                player.id === currentPlayer.id
-                  ? { ...player, cash: player.cash + cashChange }
-                  : player,
-              ),
+        players,
         decks: {
           ...state.decks,
           [deckKey]: [...state.decks[deckKey], pendingCard.cardId],
