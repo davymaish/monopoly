@@ -56,6 +56,39 @@ describe('board perimeter', () => {
     })
   })
 
+  it('renders the right ten spaces from top to bottom with vertical labels', () => {
+    const { container } = render(<BoardPerimeter />)
+    const rightTiles = Array.from(
+      container.querySelectorAll<HTMLElement>('.board-tile[data-edge="right"]'),
+    )
+    const expectedSpaces = BOARD_SPACES.filter(
+      (space) => space.position >= 30 && space.position < 40,
+    )
+
+    expect(rightTiles).toHaveLength(10)
+    expect(rightTiles.map((tile) => Number(tile.dataset.position))).toEqual(
+      expectedSpaces.map((space) => space.position),
+    )
+
+    expectedSpaces.forEach((space, index) => {
+      const tile = rightTiles[index]
+      const name = tile.querySelector('.board-tile-name')
+
+      expect(tile).toHaveAttribute('data-grid-row', String(index))
+      expect(tile).toHaveAttribute('data-grid-column', '10')
+      expect(name).toHaveTextContent(space.name)
+      expect(name).toHaveClass('board-tile-name--right')
+
+      if (space.kind === 'property') {
+        expect(tile).toHaveAttribute('data-group', space.group)
+        expect(tile.querySelector('.board-tile-band')).toHaveClass('board-tile-band--right')
+      } else {
+        expect(tile).not.toHaveAttribute('data-group')
+        expect(tile.querySelector('.board-tile-band')).not.toBeInTheDocument()
+      }
+    })
+  })
+
   it('renders all board spaces as labelled perimeter slots with a reserved center', () => {
     render(<BoardPerimeter />)
 
