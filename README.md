@@ -1,6 +1,6 @@
 # Monopoly
 
-An in-progress browser-based, local pass-and-play Monopoly game for 2–4 players sharing one device. This repository is currently at its setup baseline; gameplay and application code will arrive in focused pull requests.
+An in-progress browser-based, local pass-and-play Monopoly game for 2–4 players sharing one device. A minimal Vite shell is in place; gameplay and application code will arrive in focused pull requests.
 
 ## Planned stack
 
@@ -18,6 +18,10 @@ npm exec --yes --package=pnpm@12.21.0 -- pnpm install --frozen-lockfile
 ```
 
 The command invokes the pinned pnpm version and fails rather than rewriting the lockfile.
+
+## Run and build
+
+After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm build` to create the production output in `dist/`.
 
 ## Project layout
 
@@ -37,4 +41,4 @@ The `src/` tree will be added when the application shell is introduced. The repo
 - `.editorconfig` defines consistent UTF-8, LF line endings, final newlines, and two-space indentation.
 - `LICENSE` currently provides the MIT license.
 
-The Node/pnpm toolchain is pinned; application dependencies, scripts, tests, and CI are scheduled for later roadmap milestones.
+Vite dev/build scripts are available. React/TypeScript, test tooling, CI, and game functionality remain later roadmap milestones.
