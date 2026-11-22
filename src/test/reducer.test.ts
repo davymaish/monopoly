@@ -21,11 +21,15 @@ function createVermontPurchaseState(cash = 1500) {
   return gameReducer(rolledState, { type: 'move-player' })
 }
 
-function createVermontLandingState(ownershipOverrides: Record<string, string | null> = {}) {
+function createVermontLandingState(
+  ownershipOverrides: Record<string, string | null> = {},
+  mortgagedProperties: string[] = [],
+) {
   const initialState = createInitialGameState(setup)
   const nearPropertyState = {
     ...initialState,
     ownership: { ...initialState.ownership, ...ownershipOverrides },
+    mortgagedProperties,
     players: initialState.players.map((player, index) =>
       index === 0 ? { ...player, position: 4 } : player,
     ),
@@ -184,6 +188,27 @@ describe('gameReducer skeleton', () => {
         state.log.some(({ event }) => event.type === 'payment' && event.reason === 'rent'),
       ).toBe(false)
     }
+  })
+
+  it('skips rent on an opponent-owned mortgaged property and logs why', () => {
+    const state = createVermontLandingState({ 'vermont-avenue': 'player-2' }, ['vermont-avenue'])
+
+    expect(state.players[0]).toMatchObject({ position: 8, cash: 1500 })
+    expect(state.players[1]).toMatchObject({ cash: 1500 })
+    expect(state.landingResolution).toEqual({
+      type: 'mortgaged-property',
+      spaceId: 'vermont-avenue',
+      spaceName: 'Vermont Avenue',
+      ownerId: 'player-2',
+      legalActions: ['continue'],
+    })
+    expect(state.log.at(-1)?.event).toEqual({
+      type: 'rent-skipped',
+      payerId: 'player-1',
+      ownerId: 'player-2',
+      propertyId: 'vermont-avenue',
+      reason: 'mortgaged',
+    })
   })
 
   it('charges double rent when the street owner holds the complete color group', () => {

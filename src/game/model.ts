@@ -33,6 +33,13 @@ export type GameLogEvent =
       amount: number
       reason: 'rent' | 'tax' | 'property-purchase' | 'card' | 'jail-bail'
     }
+  | {
+      type: 'rent-skipped'
+      payerId: PlayerId
+      ownerId: PlayerId
+      propertyId: string
+      reason: 'mortgaged'
+    }
   | { type: 'turn-change'; fromPlayerId: PlayerId; toPlayerId: PlayerId }
 
 export interface GameLogEntry {
@@ -63,6 +70,13 @@ export type LandingResolution =
       ownedByCurrentPlayer: false
       legalActions: readonly ['pay-rent']
     }
+  | {
+      type: 'mortgaged-property'
+      spaceId: string
+      spaceName: string
+      ownerId: PlayerId
+      legalActions: readonly ['continue']
+    }
   | { type: 'tax'; spaceId: string; tax: 'income' | 'luxury'; legalActions: readonly ['pay-tax'] }
   | {
       type: 'card'
@@ -85,6 +99,7 @@ export interface GameState {
   players: Player[]
   currentPlayerIndex: number
   ownership: PropertyOwnership
+  mortgagedProperties: string[]
   landingResolution: LandingResolution | null
   dice: DiceRoll | null
   decks: CardDeckState

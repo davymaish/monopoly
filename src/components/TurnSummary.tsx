@@ -35,6 +35,11 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
       const reason = event.reason.replace(/-/g, ' ')
       return `${getPlayerName(players, event.payerId)} paid ${formatCash(event.amount)} to ${payee} for ${reason}.`
     }
+    case 'rent-skipped': {
+      const propertyName =
+        BOARD_SPACES.find((space) => space.id === event.propertyId)?.name ?? event.propertyId
+      return `${getPlayerName(players, event.payerId)} landed on ${propertyName}; no rent was paid to ${getPlayerName(players, event.ownerId)} because it is mortgaged.`
+    }
     case 'turn-change':
       return `${getPlayerName(players, event.fromPlayerId)} ended their turn. ${getPlayerName(players, event.toPlayerId)} is up next.`
   }
