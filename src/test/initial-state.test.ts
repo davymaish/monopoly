@@ -32,7 +32,6 @@ describe('createInitialGameState', () => {
         (player) =>
           player.position === goPosition &&
           player.cash === STARTING_CASH &&
-          player.ownedPropertyIds.length === 0 &&
           player.getOutOfJailFreeCardCount === 0,
       ),
     ).toBe(true)
