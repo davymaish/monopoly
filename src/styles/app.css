@@ -277,6 +277,31 @@ body {
   box-shadow: 0 0 0 1px var(--color-border);
 }
 
+.setup-field-error,
+.setup-validation-error {
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.setup-field-error {
+  margin: 0;
+}
+
+.setup-validation-error,
+.setup-validation-success {
+  margin: var(--space-4) 0 0;
+}
+
+.setup-validation-error {
+  color: var(--color-accent);
+}
+
+.setup-validation-success {
+  color: var(--color-brand);
+  font-weight: var(--font-weight-bold);
+}
+
 .board-perimeter {
   display: grid;
   width: min(100%, 58rem);

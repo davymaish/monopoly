@@ -5,8 +5,9 @@ import type { PropertyDeed } from './components/PropertyDetailCard'
 import PlayerCountSelector from './components/PlayerCountSelector'
 import type { PlayerCount } from './components/PlayerCountSelector'
 import PlayerNameFields, { normalizePlayerNames } from './components/PlayerNameFields'
-import PlayerColorSelector from './components/PlayerColorSelector'
+import PlayerColorSelector, { PLAYER_TOKEN_COLORS } from './components/PlayerColorSelector'
 import type { PlayerColor } from './components/PlayerColorSelector'
+import { validateSetup } from './setup/validation'
 
 export default function App(): ReactElement {
   const [selectedDeed, setSelectedDeed] = useState<PropertyDeed | null>(null)
@@ -42,6 +43,13 @@ export default function App(): ReactElement {
     )
   }
 
+  const setupValidation = validateSetup({
+    playerCount,
+    playerNames,
+    playerColors,
+    availableColorIds: PLAYER_TOKEN_COLORS.map((color) => color.id),
+  })
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -52,18 +60,33 @@ export default function App(): ReactElement {
       <main className="app-main">
         <section className="setup-panel" aria-labelledby="setup-heading">
           <h2 id="setup-heading">Game setup</h2>
-          <PlayerCountSelector playerCount={playerCount} onPlayerCountChange={setPlayerCount} />
+          <PlayerCountSelector
+            playerCount={playerCount}
+            onPlayerCountChange={setPlayerCount}
+            errorMessage={setupValidation.playerCountError}
+          />
           <PlayerNameFields
             playerCount={playerCount}
             playerNames={playerNames}
             onPlayerNameChange={handlePlayerNameChange}
             onNormalizeNames={handleNormalizeNames}
+            fieldErrors={setupValidation.playerNameErrors}
           />
           <PlayerColorSelector
             playerCount={playerCount}
             playerColors={playerColors}
             onPlayerColorChange={handlePlayerColorChange}
+            fieldErrors={setupValidation.playerColorErrors}
           />
+          {setupValidation.isValid ? (
+            <p className="setup-validation-success" role="status">
+              Setup is valid.
+            </p>
+          ) : (
+            <p className="setup-validation-error" role="alert">
+              Resolve the highlighted setup fields before starting.
+            </p>
+          )}
         </section>
         <BoardPerimeter onSelectDeed={setSelectedDeed} selectedDeedId={selectedDeed?.id ?? null} />
         <PropertyDetailCard property={selectedDeed} />
