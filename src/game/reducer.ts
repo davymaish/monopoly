@@ -1,4 +1,6 @@
 import type { GameReducer } from './actions'
+import { BOARD_SPACES } from './board'
+import { resolveLanding } from './landing'
 import { appendGameLog } from './log'
 import type { GameLogEvent } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
@@ -13,6 +15,7 @@ export const gameReducer: GameReducer = (state, action) => {
       return {
         ...state,
         dice: action.dice,
+        landingResolution: null,
         phase: 'resolving-turn',
         log: appendGameLog(state.log, [
           { type: 'roll', playerId: state.players[state.currentPlayerIndex].id, dice: action.dice },
@@ -26,6 +29,13 @@ export const gameReducer: GameReducer = (state, action) => {
       }
 
       const destination = calculateDestinationPosition(currentPlayer.position, state.dice)
+      const landingSpace = BOARD_SPACES.find((space) => space.position === destination)
+      const landingResolution = resolveLanding(
+        landingSpace,
+        state.ownership,
+        state.players.map(({ id }) => id),
+        currentPlayer.id,
+      )
       const passesGo = currentPlayer.position + state.dice[0] + state.dice[1] >= BOARD_SPACE_COUNT
       const players = state.players.map((player, index) =>
         index === state.currentPlayerIndex
@@ -58,6 +68,7 @@ export const gameReducer: GameReducer = (state, action) => {
       return {
         ...state,
         players,
+        landingResolution,
         phase: 'awaiting-player-action',
         log: appendGameLog(state.log, events),
       }
@@ -84,6 +95,7 @@ export const gameReducer: GameReducer = (state, action) => {
       return {
         ...state,
         currentPlayerIndex: nextPlayerIndex,
+        landingResolution: null,
         dice: null,
         phase: 'awaiting-roll',
         log: appendGameLog(state.log, [
