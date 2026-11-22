@@ -10,6 +10,8 @@ describe('game action contract', () => {
       | { type: 'end-turn' }
       | { type: 'buy-property'; propertyId: string }
       | { type: 'decline-purchase'; propertyId: string }
+      | { type: 'auction-bid'; amount: number }
+      | { type: 'auction-pass' }
     >()
   })
 
@@ -22,6 +24,10 @@ describe('game action contract', () => {
     expect({ type: 'buy-property', propertyId: 'boardwalk' } satisfies GameAction).toEqual({
       type: 'buy-property',
       propertyId: 'boardwalk',
+    })
+    expect({ type: 'auction-bid', amount: 50 } satisfies GameAction).toEqual({
+      type: 'auction-bid',
+      amount: 50,
     })
   })
 })

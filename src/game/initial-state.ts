@@ -62,6 +62,7 @@ export function createInitialGameState(setup: InitialGameSetup): GameState {
     currentPlayerIndex: 0,
     ownership: createInitialPropertyOwnership(),
     mortgagedProperties: [],
+    auction: null,
     landingResolution: null,
     dice: null,
     decks: { chance: [], communityChest: [] },

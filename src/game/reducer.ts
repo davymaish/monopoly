@@ -2,10 +2,92 @@ import type { GameReducer } from './actions'
 import { BOARD_SPACES } from './board'
 import { resolveLanding } from './landing'
 import { appendGameLog } from './log'
-import type { GameLogEvent } from './model'
+import type { AuctionState, GameLogEvent, GameState, PlayerId } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 import { getPurchasableDeedById } from './purchasable'
 import { calculateRailroadRent, calculateStreetRent, calculateUtilityPropertyRent } from './rent'
+
+function finishAuction(state: GameState, auction: AuctionState): GameState {
+  const winner = auction.highBidderId
+    ? state.players.find((player) => player.id === auction.highBidderId)
+    : undefined
+  const deed = getPurchasableDeedById(auction.propertyId)
+  const canAward =
+    winner !== undefined &&
+    deed !== undefined &&
+    state.ownership[auction.propertyId] === null &&
+    winner.cash >= auction.highBid
+
+  if (winner && deed && canAward) {
+    const players = state.players.map((player) =>
+      player.id === winner.id ? { ...player, cash: player.cash - auction.highBid } : player,
+    )
+
+    return {
+      ...state,
+      players,
+      ownership: { ...state.ownership, [auction.propertyId]: winner.id },
+      landingResolution: null,
+      auction: null,
+      phase: 'awaiting-player-action',
+      log: appendGameLog(state.log, [
+        {
+          type: 'payment',
+          payerId: winner.id,
+          payeeId: null,
+          amount: auction.highBid,
+          reason: 'property-purchase',
+        },
+        {
+          type: 'auction-ended',
+          propertyId: auction.propertyId,
+          winnerId: winner.id,
+          amount: auction.highBid,
+        },
+      ]),
+    }
+  }
+
+  return {
+    ...state,
+    landingResolution: null,
+    auction: null,
+    phase: 'awaiting-player-action',
+    log: appendGameLog(state.log, [
+      { type: 'auction-ended', propertyId: auction.propertyId, winnerId: null, amount: 0 },
+    ]),
+  }
+}
+
+function advanceAuction(
+  state: GameState,
+  auction: AuctionState,
+  currentBidderId: PlayerId,
+): GameState {
+  const passed = new Set(auction.passedPlayerIds)
+  const anotherBidderCanRespond = auction.highBidderId
+    ? auction.biddingOrder.some(
+        (playerId) => playerId !== auction.highBidderId && !passed.has(playerId),
+      )
+    : false
+
+  if (
+    (auction.highBidderId && !anotherBidderCanRespond) ||
+    (!auction.highBidderId && passed.size === auction.biddingOrder.length)
+  ) {
+    return finishAuction(state, auction)
+  }
+
+  const currentIndex = auction.biddingOrder.indexOf(currentBidderId)
+  for (let step = 1; step <= auction.biddingOrder.length; step += 1) {
+    const nextBidderId = auction.biddingOrder[(currentIndex + step) % auction.biddingOrder.length]
+    if (nextBidderId && !passed.has(nextBidderId)) {
+      return { ...state, auction: { ...auction, activeBidderId: nextBidderId } }
+    }
+  }
+
+  return finishAuction(state, auction)
+}
 
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
@@ -180,16 +262,89 @@ export const gameReducer: GameReducer = (state, action) => {
       }
     }
     case 'decline-purchase': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+
       if (
         state.phase !== 'awaiting-player-action' ||
         state.landingResolution?.type !== 'unowned-property' ||
         state.landingResolution.spaceId !== action.propertyId ||
-        state.ownership[action.propertyId] !== null
+        state.ownership[action.propertyId] !== null ||
+        !currentPlayer
       ) {
         return state
       }
 
-      return { ...state, landingResolution: null }
+      const biddingOrder = [
+        ...state.players.slice(state.currentPlayerIndex + 1),
+        ...state.players.slice(0, state.currentPlayerIndex + 1),
+      ].map(({ id }) => id)
+      const firstBidderId = biddingOrder[0]
+
+      if (!firstBidderId) {
+        return state
+      }
+
+      return {
+        ...state,
+        landingResolution: null,
+        auction: {
+          propertyId: action.propertyId,
+          biddingOrder,
+          activeBidderId: firstBidderId,
+          highBid: 0,
+          highBidderId: null,
+          passedPlayerIds: [],
+        },
+        phase: 'auction',
+      }
+    }
+    case 'auction-bid': {
+      const auction = state.auction
+      const bidder = auction
+        ? state.players.find((player) => player.id === auction.activeBidderId)
+        : undefined
+
+      if (
+        state.phase !== 'auction' ||
+        !auction ||
+        !bidder ||
+        auction.passedPlayerIds.includes(bidder.id) ||
+        !Number.isInteger(action.amount) ||
+        action.amount <= auction.highBid ||
+        action.amount > bidder.cash
+      ) {
+        return state
+      }
+
+      const updatedAuction = {
+        ...auction,
+        highBid: action.amount,
+        highBidderId: bidder.id,
+      }
+
+      return advanceAuction(state, updatedAuction, bidder.id)
+    }
+    case 'auction-pass': {
+      const auction = state.auction
+      const bidder = auction
+        ? state.players.find((player) => player.id === auction.activeBidderId)
+        : undefined
+
+      if (
+        state.phase !== 'auction' ||
+        !auction ||
+        !bidder ||
+        auction.passedPlayerIds.includes(bidder.id)
+      ) {
+        return state
+      }
+
+      const updatedAuction = {
+        ...auction,
+        passedPlayerIds: [...auction.passedPlayerIds, bidder.id],
+      }
+
+      return advanceAuction(state, updatedAuction, bidder.id)
     }
     default:
       return state

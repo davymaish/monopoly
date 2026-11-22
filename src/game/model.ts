@@ -4,7 +4,8 @@ export type PlayerId = string
 export type DieValue = 1 | 2 | 3 | 4 | 5 | 6
 export type DiceRoll = readonly [DieValue, DieValue]
 
-export type GamePhase = 'awaiting-roll' | 'resolving-turn' | 'awaiting-player-action' | 'game-over'
+export type GamePhase =
+  'awaiting-roll' | 'resolving-turn' | 'awaiting-player-action' | 'auction' | 'game-over'
 
 export interface Player {
   id: PlayerId
@@ -13,6 +14,15 @@ export interface Player {
   cash: number
   position: number
   getOutOfJailFreeCardCount: number
+}
+
+export interface AuctionState {
+  propertyId: string
+  biddingOrder: PlayerId[]
+  activeBidderId: PlayerId
+  highBid: number
+  highBidderId: PlayerId | null
+  passedPlayerIds: PlayerId[]
 }
 
 export type PropertyOwnership = Record<string, PlayerId | null>
@@ -40,6 +50,7 @@ export type GameLogEvent =
       propertyId: string
       reason: 'mortgaged'
     }
+  | { type: 'auction-ended'; propertyId: string; winnerId: PlayerId | null; amount: number }
   | { type: 'turn-change'; fromPlayerId: PlayerId; toPlayerId: PlayerId }
 
 export interface GameLogEntry {
@@ -100,6 +111,7 @@ export interface GameState {
   currentPlayerIndex: number
   ownership: PropertyOwnership
   mortgagedProperties: string[]
+  auction: AuctionState | null
   landingResolution: LandingResolution | null
   dice: DiceRoll | null
   decks: CardDeckState

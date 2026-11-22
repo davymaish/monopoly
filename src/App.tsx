@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactElement } from 'react'
+import AuctionPrompt from './components/AuctionPrompt'
 import BoardPerimeter from './components/BoardPerimeter'
 import DiceDisplay from './components/DiceDisplay'
 import PurchasePrompt from './components/PurchasePrompt'
@@ -99,6 +100,18 @@ export default function App(): ReactElement {
     )
   }
 
+  function handleAuctionBid(amount: number) {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'auction-bid', amount }) : currentState,
+    )
+  }
+
+  function handleAuctionPass() {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'auction-pass' }) : currentState,
+    )
+  }
+
   const setupValidation = validateSetup({
     playerCount,
     playerNames,
@@ -132,6 +145,11 @@ export default function App(): ReactElement {
               gameState={gameState}
               onBuyProperty={handleBuyProperty}
               onDeclinePurchase={handleDeclinePurchase}
+            />
+            <AuctionPrompt
+              gameState={gameState}
+              onBid={handleAuctionBid}
+              onPass={handleAuctionPass}
             />
             <DiceDisplay dice={gameState.dice} />
             <BoardPerimeter
