@@ -5,7 +5,7 @@ import { appendGameLog } from './log'
 import type { GameLogEvent } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 import { getPurchasableDeedById } from './purchasable'
-import { calculateRailroadRent, calculateStreetRent } from './rent'
+import { calculateRailroadRent, calculateStreetRent, calculateUtilityPropertyRent } from './rent'
 
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
@@ -47,7 +47,13 @@ export const gameReducer: GameReducer = (state, action) => {
           ? calculateStreetRent(landingSpace.id, state.ownership)
           : rentOwnerId && landingSpace?.kind === 'railroad'
             ? calculateRailroadRent(landingSpace.id, state.ownership)
-            : 0
+            : rentOwnerId && landingSpace?.kind === 'utility'
+              ? calculateUtilityPropertyRent(
+                  landingSpace.id,
+                  state.ownership,
+                  state.dice[0] + state.dice[1],
+                )
+              : 0
       const passesGo = currentPlayer.position + state.dice[0] + state.dice[1] >= BOARD_SPACE_COUNT
       const players = state.players.map((player, index) => ({
         ...player,
