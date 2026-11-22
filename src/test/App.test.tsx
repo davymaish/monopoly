@@ -11,9 +11,16 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Monopoly' })).toBeInTheDocument()
   })
 
-  it('renders the board perimeter', () => {
+  it('keeps setup visible until a valid game starts, then renders the board', () => {
     render(<App />)
 
+    expect(screen.getByRole('heading', { level: 2, name: 'Game setup' })).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Monopoly board' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+
+    expect(screen.queryByRole('heading', { level: 2, name: 'Game setup' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Game board' })).toBeInTheDocument()
     expect(screen.getByRole('list', { name: 'Monopoly board' })).toBeInTheDocument()
   })
 
@@ -54,11 +61,13 @@ describe('App shell', () => {
     expect(firstName).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByText('Enter a name for this player.')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('Resolve the highlighted setup fields')
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeDisabled()
 
     fireEvent.change(firstName, { target: { value: 'Avery' } })
 
     expect(firstName).toHaveValue('Avery')
     expect(screen.getByRole('status')).toHaveTextContent('Setup is valid.')
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeEnabled()
   })
 
   it('assigns distinct token colors to active players', () => {
@@ -78,6 +87,7 @@ describe('App shell', () => {
 
   it('shows a deed card when a property is hovered', () => {
     render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
 
     const property = screen.getByRole('button', {
       name: 'Show details for Mediterranean Avenue',

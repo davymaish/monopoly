@@ -116,6 +116,33 @@ body {
   font-size: var(--font-size-heading);
 }
 
+.start-game-button {
+  min-height: 3rem;
+  margin-top: var(--space-5);
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: var(--color-control-background);
+  color: var(--color-control-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.start-game-button:disabled {
+  border-color: var(--color-border);
+  background: var(--color-page);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+.game-screen h2 {
+  margin: 0 0 var(--space-4);
+  color: var(--color-brand);
+  font-size: var(--font-size-heading);
+  text-align: center;
+}
+
 .player-count-selector {
   min-width: 0;
   margin: 0;
