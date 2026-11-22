@@ -153,6 +153,65 @@ describe('gameReducer skeleton', () => {
     expect(noWrapMove.players[0]).toMatchObject({ position: 13, cash: 1500 })
   })
 
+  it('charges the selected income tax once and blocks ending the turn before payment', () => {
+    const initialState = createInitialGameState(setup)
+    const nearIncomeTaxState = {
+      ...initialState,
+      mortgagedProperties: ['vermont-avenue'],
+      ownership: { ...initialState.ownership, 'vermont-avenue': 'player-1' },
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 2, cash: 1494 } : player,
+      ),
+    }
+    const rolledState = gameReducer(nearIncomeTaxState, { type: 'roll-dice', dice: [1, 1] })
+    const taxState = gameReducer(rolledState, { type: 'move-player' })
+
+    expect(taxState.landingResolution).toEqual({
+      type: 'tax',
+      spaceId: 'income-tax',
+      tax: 'income',
+      legalActions: ['pay-tax'],
+    })
+    expect(gameReducer(taxState, { type: 'end-turn' })).toBe(taxState)
+
+    const paidState = gameReducer(taxState, { type: 'pay-tax', choice: 'percentage' })
+    expect(paidState.players[0]).toMatchObject({ cash: 1335 })
+    expect(paidState.players[1]?.cash).toBe(1500)
+    expect(paidState.landingResolution).toBeNull()
+    expect(paidState.log.at(-1)?.event).toEqual({
+      type: 'payment',
+      payerId: 'player-1',
+      payeeId: null,
+      amount: 159,
+      reason: 'tax',
+    })
+    expect(gameReducer(paidState, { type: 'pay-tax', choice: 'percentage' })).toBe(paidState)
+  })
+
+  it('charges the fixed luxury tax and rejects an income-tax percentage choice', () => {
+    const initialState = createInitialGameState(setup)
+    const nearLuxuryTaxState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 36 } : player,
+      ),
+    }
+    const rolledState = gameReducer(nearLuxuryTaxState, { type: 'roll-dice', dice: [1, 1] })
+    const taxState = gameReducer(rolledState, { type: 'move-player' })
+
+    expect(gameReducer(taxState, { type: 'pay-tax', choice: 'percentage' })).toBe(taxState)
+
+    const paidState = gameReducer(taxState, { type: 'pay-tax', choice: 'fixed' })
+    expect(paidState.players[0]?.cash).toBe(1400)
+    expect(paidState.log.at(-1)?.event).toEqual({
+      type: 'payment',
+      payerId: 'player-1',
+      payeeId: null,
+      amount: 100,
+      reason: 'tax',
+    })
+  })
+
   it('charges base street rent to the active player and credits the owner once', () => {
     const state = createVermontLandingState({ 'vermont-avenue': 'player-2' })
 

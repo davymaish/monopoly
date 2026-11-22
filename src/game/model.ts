@@ -3,6 +3,7 @@ import type { PlayerColor } from '../setup/config'
 export type PlayerId = string
 export type DieValue = 1 | 2 | 3 | 4 | 5 | 6
 export type DiceRoll = readonly [DieValue, DieValue]
+export type TaxPaymentChoice = 'fixed' | 'percentage'
 
 export type GamePhase =
   'awaiting-roll' | 'resolving-turn' | 'awaiting-player-action' | 'auction' | 'game-over'

@@ -12,6 +12,7 @@ describe('game action contract', () => {
       | { type: 'decline-purchase'; propertyId: string }
       | { type: 'auction-bid'; amount: number }
       | { type: 'auction-pass' }
+      | { type: 'pay-tax'; choice: 'fixed' | 'percentage' }
     >()
   })
 
@@ -28,6 +29,10 @@ describe('game action contract', () => {
     expect({ type: 'auction-bid', amount: 50 } satisfies GameAction).toEqual({
       type: 'auction-bid',
       amount: 50,
+    })
+    expect({ type: 'pay-tax', choice: 'percentage' } satisfies GameAction).toEqual({
+      type: 'pay-tax',
+      choice: 'percentage',
     })
   })
 })
