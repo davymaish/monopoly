@@ -32,6 +32,8 @@ jobs:
         run: pnpm format:check
       - name: Lint
         run: pnpm lint
+      - name: Check color contrast
+        run: pnpm contrast:check
       - name: Type-check
         run: pnpm typecheck
       - name: Test
