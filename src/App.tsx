@@ -7,6 +7,7 @@ import type { PlayerCount } from './components/PlayerCountSelector'
 import PlayerNameFields, { normalizePlayerNames } from './components/PlayerNameFields'
 import PlayerColorSelector, { PLAYER_TOKEN_COLORS } from './components/PlayerColorSelector'
 import type { PlayerColor } from './components/PlayerColorSelector'
+import PlayerPanel from './components/PlayerPanel'
 import { validateSetup } from './setup/validation'
 import { createInitialGameState, type InitialGameState } from './game/initial-state'
 
@@ -74,6 +75,7 @@ export default function App(): ReactElement {
         {gameState ? (
           <section className="game-screen" aria-labelledby="game-screen-heading">
             <h2 id="game-screen-heading">Game board</h2>
+            <PlayerPanel gameState={gameState} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
               selectedDeedId={selectedDeed?.id ?? null}
