@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialPropertyOwnership } from '../game/ownership'
-import { calculateStreetRent } from '../game/rent'
+import { calculateRailroadRent, calculateStreetRent } from '../game/rent'
 
 describe('calculateStreetRent', () => {
   it('returns the printed base rent for an owned street without a complete group', () => {
@@ -40,5 +40,45 @@ describe('calculateStreetRent', () => {
     }
 
     expect(calculateStreetRent('vermont-avenue', ownership)).toBe(6)
+  })
+})
+
+describe('calculateRailroadRent', () => {
+  it.each([
+    [25, 1],
+    [50, 2],
+    [100, 3],
+    [200, 4],
+  ])('returns $%i rent when the owner holds %i railroad(s)', (expectedRent, ownedCount) => {
+    const railroadIds = [
+      'reading-railroad',
+      'pennsylvania-railroad',
+      'b-and-o-railroad',
+      'short-line-railroad',
+    ]
+    const ownership = {
+      ...createInitialPropertyOwnership(),
+      ...Object.fromEntries(railroadIds.slice(0, ownedCount).map((id) => [id, 'player-1'])),
+    }
+
+    expect(calculateRailroadRent('reading-railroad', ownership)).toBe(expectedRent)
+  })
+
+  it('doubles the rent when a card effect supplies the railroad rent multiplier', () => {
+    const ownership = {
+      ...createInitialPropertyOwnership(),
+      'reading-railroad': 'player-1',
+      'pennsylvania-railroad': 'player-1',
+    }
+
+    expect(calculateRailroadRent('reading-railroad', ownership, 2)).toBe(100)
+  })
+
+  it('returns zero for unowned, unknown, or non-railroad deeds', () => {
+    const ownership = createInitialPropertyOwnership()
+
+    expect(calculateRailroadRent('reading-railroad', ownership)).toBe(0)
+    expect(calculateRailroadRent('unknown-property', ownership)).toBe(0)
+    expect(calculateRailroadRent('vermont-avenue', ownership)).toBe(0)
   })
 })
