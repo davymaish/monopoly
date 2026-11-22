@@ -78,6 +78,7 @@ export default function App(): ReactElement {
             <PlayerPanel gameState={gameState} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
+              players={gameState.players}
               selectedDeedId={selectedDeed?.id ?? null}
             />
             <PropertyDetailCard property={selectedDeed} />

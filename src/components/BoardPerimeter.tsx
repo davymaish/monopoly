@@ -1,11 +1,13 @@
 import { BOARD_SPACES } from '../game/board'
 import type { BoardSpace } from '../game/board-space'
+import type { InitialPlayer } from '../game/initial-state'
 import { RAILROADS } from '../game/railroad-data'
 import type { RailroadProperty } from '../game/railroad-data'
 import { STREET_PROPERTIES } from '../game/street-data'
 import type { StreetProperty } from '../game/street-data'
 import { UTILITIES } from '../game/utility-data'
 import type { UtilityProperty } from '../game/utility-data'
+import { PLAYER_TOKEN_COLORS } from './PlayerColorSelector'
 import type { PropertyDeed } from './PropertyDetailCard'
 
 export interface GridCoordinates {
@@ -15,6 +17,7 @@ export interface GridCoordinates {
 
 interface BoardPerimeterProps {
   onSelectDeed?: (deed: PropertyDeed) => void
+  players?: readonly Pick<InitialPlayer, 'id' | 'name' | 'color' | 'position'>[]
   selectedDeedId?: string | null
 }
 
@@ -51,7 +54,11 @@ export function getBoardGridCoordinates(position: number): GridCoordinates {
   return { row: position - 30, column: 10 }
 }
 
-export default function BoardPerimeter({ onSelectDeed, selectedDeedId }: BoardPerimeterProps = {}) {
+export default function BoardPerimeter({
+  onSelectDeed,
+  players = [],
+  selectedDeedId,
+}: BoardPerimeterProps = {}) {
   return (
     <div className="board-perimeter" role="list" aria-label="Monopoly board">
       <div className="board-center" aria-hidden="true">
@@ -80,6 +87,7 @@ export default function BoardPerimeter({ onSelectDeed, selectedDeedId }: BoardPe
               : undefined
         const isProperty = space.kind === 'property'
         const deed = getPropertyDeed(space)
+        const playersAtSpace = players.filter((player) => player.position === space.position)
         const tileClassName = `${edge ? `board-tile board-tile--${edge}` : 'board-tile'}${
           corner ? ` board-tile--corner board-tile--corner-${corner}` : ''
         }`
@@ -166,6 +174,26 @@ export default function BoardPerimeter({ onSelectDeed, selectedDeedId }: BoardPe
               </button>
             ) : (
               tileContent
+            )}
+            {playersAtSpace.length > 0 && (
+              <div className="board-tile-tokens">
+                {playersAtSpace.map((player) => {
+                  const color = PLAYER_TOKEN_COLORS.find((option) => option.id === player.color)
+
+                  return (
+                    <span
+                      aria-label={`${player.name} token`}
+                      className="board-player-token"
+                      data-player-id={player.id}
+                      key={player.id}
+                      role="img"
+                      style={{ backgroundColor: color?.hex ?? 'transparent' }}
+                    >
+                      {player.name.trim().charAt(0).toLocaleUpperCase()}
+                    </span>
+                  )
+                })}
+              </div>
             )}
           </div>
         )
