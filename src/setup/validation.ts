@@ -22,8 +22,9 @@ export function validateSetup({
   availableColorIds,
 }: SetupValidationInput): SetupValidationResult {
   const playerCountError = isPlayerCount(playerCount) ? null : 'Choose 2, 3, or 4 players.'
-  const fieldsToValidate =
-    Number.isInteger(playerCount) && playerCount > 0
+  const fieldsToValidate = isPlayerCount(playerCount)
+    ? playerCount
+    : Number.isInteger(playerCount) && playerCount > 0
       ? Math.min(playerCount, Math.max(playerNames.length, playerColors.length))
       : 0
   const usedNames = new Set<string>()

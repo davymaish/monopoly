@@ -1,5 +1,7 @@
 import type { ChangeEvent, ReactElement } from 'react'
-import type { PlayerCount } from '../setup/config'
+import type { PlayerColor, PlayerCount } from '../setup/config'
+
+export type { PlayerColor } from '../setup/config'
 
 export const PLAYER_TOKEN_COLORS = [
   { id: 'red', name: 'Red', hex: '#a52832' },
@@ -10,9 +12,7 @@ export const PLAYER_TOKEN_COLORS = [
   { id: 'teal', name: 'Teal', hex: '#087e8b' },
   { id: 'gold', name: 'Gold', hex: '#886000' },
   { id: 'charcoal', name: 'Charcoal', hex: '#333333' },
-] as const
-
-export type PlayerColor = (typeof PLAYER_TOKEN_COLORS)[number]['id']
+] as const satisfies readonly { id: PlayerColor; name: string; hex: string }[]
 
 const DEFAULT_PLAYER_COLORS: readonly PlayerColor[] = ['red', 'blue', 'green', 'purple']
 
