@@ -148,21 +148,34 @@ describe('gameReducer skeleton', () => {
     })
   })
 
-  it('does not charge street rent for unowned, self-owned, or complete-group property', () => {
+  it('does not charge street rent for unowned or self-owned property', () => {
     const unownedState = createVermontLandingState()
     const selfOwnedState = createVermontLandingState({ 'vermont-avenue': 'player-1' })
-    const completeGroupState = createVermontLandingState({
-      'oriental-avenue': 'player-2',
-      'vermont-avenue': 'player-2',
-      'connecticut-avenue': 'player-2',
-    })
 
-    for (const state of [unownedState, selfOwnedState, completeGroupState]) {
+    for (const state of [unownedState, selfOwnedState]) {
       expect(state.players.map((player) => player.cash)).toEqual([1500, 1500])
       expect(
         state.log.some(({ event }) => event.type === 'payment' && event.reason === 'rent'),
       ).toBe(false)
     }
+  })
+
+  it('charges double rent when the street owner holds the complete color group', () => {
+    const state = createVermontLandingState({
+      'oriental-avenue': 'player-2',
+      'vermont-avenue': 'player-2',
+      'connecticut-avenue': 'player-2',
+    })
+
+    expect(state.players[0]).toMatchObject({ cash: 1488 })
+    expect(state.players[1]).toMatchObject({ cash: 1512 })
+    expect(state.log.at(-1)?.event).toEqual({
+      type: 'payment',
+      payerId: 'player-1',
+      payeeId: 'player-2',
+      amount: 12,
+      reason: 'rent',
+    })
   })
 
   it('advances through all players in order and safely wraps to the first player', () => {
