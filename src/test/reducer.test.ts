@@ -47,6 +47,19 @@ function createRailroadLandingState(ownershipOverrides: Record<string, string | 
   return gameReducer(rolledState, { type: 'move-player' })
 }
 
+function createUtilityLandingState(ownershipOverrides: Record<string, string | null> = {}) {
+  const initialState = createInitialGameState(setup)
+  const nearUtilityState = {
+    ...initialState,
+    ownership: { ...initialState.ownership, ...ownershipOverrides },
+    players: initialState.players.map((player, index) =>
+      index === 0 ? { ...player, position: 8 } : player,
+    ),
+  }
+  const rolledState = gameReducer(nearUtilityState, { type: 'roll-dice', dice: [2, 2] })
+  return gameReducer(rolledState, { type: 'move-player' })
+}
+
 describe('gameReducer skeleton', () => {
   it('dispatches recognized actions as safe no-ops without mutating or rolling randomly', () => {
     const state = createInitialGameState(setup)
@@ -204,6 +217,20 @@ describe('gameReducer skeleton', () => {
       payerId: 'player-1',
       payeeId: 'player-2',
       amount: 50,
+      reason: 'rent',
+    })
+  })
+
+  it('charges utility rent from the stored dice total and credits the owner', () => {
+    const state = createUtilityLandingState({ 'electric-company': 'player-2' })
+
+    expect(state.players[0]).toMatchObject({ position: 12, cash: 1484 })
+    expect(state.players[1]).toMatchObject({ cash: 1516 })
+    expect(state.log.at(-1)?.event).toEqual({
+      type: 'payment',
+      payerId: 'player-1',
+      payeeId: 'player-2',
+      amount: 16,
       reason: 'rent',
     })
   })
