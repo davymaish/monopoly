@@ -1,6 +1,7 @@
 import type { DiceRoll } from './model'
 
 export const BOARD_SPACE_COUNT = 40
+export const GO_SALARY = 200
 
 export function calculateDestinationPosition(position: number, dice: DiceRoll): number {
   if (!Number.isInteger(position) || position < 0 || position >= BOARD_SPACE_COUNT) {
