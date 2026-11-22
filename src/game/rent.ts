@@ -1,7 +1,7 @@
 import type { PropertyOwnership } from './model'
 import { STREET_PROPERTIES } from './street-data'
 
-export function calculateBaseStreetRent(propertyId: string, ownership: PropertyOwnership): number {
+export function calculateStreetRent(propertyId: string, ownership: PropertyOwnership): number {
   const property = STREET_PROPERTIES.find((street) => street.id === propertyId)
   const ownerId = ownership[propertyId]
 
@@ -12,5 +12,5 @@ export function calculateBaseStreetRent(propertyId: string, ownership: PropertyO
   const groupProperties = STREET_PROPERTIES.filter((street) => street.group === property.group)
   const ownerHasCompleteGroup = groupProperties.every((street) => ownership[street.id] === ownerId)
 
-  return ownerHasCompleteGroup ? 0 : property.rents.base
+  return ownerHasCompleteGroup ? property.rents.completeGroup : property.rents.base
 }
