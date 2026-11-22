@@ -178,8 +178,10 @@ describe('App shell', () => {
       expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
 
+      expect(screen.getByText('$1,700')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
       const activity = screen.getByRole('list', { name: 'Recent activity' })
+      expect(within(activity).getByText(/Player 1 collected \$200 from a card/)).toBeInTheDocument()
       expect(
         within(activity).getByText(/drew from Community Chest: Bank error/),
       ).toBeInTheDocument()

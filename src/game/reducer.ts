@@ -285,21 +285,56 @@ export const gameReducer: GameReducer = (state, action) => {
       }
 
       const deckKey = pendingCard.deck === 'chance' ? 'chance' : 'communityChest'
+      const card = getCardDefinition(pendingCard.deck, pendingCard.cardId)
+      const cashEffect = card?.effect.type === 'cash' ? card.effect : null
+      const cashChange =
+        cashEffect?.direction === 'collect'
+          ? cashEffect.amount
+          : cashEffect?.direction === 'pay'
+            ? -cashEffect.amount
+            : 0
+      const events: GameLogEvent[] = []
+
+      if (cashEffect?.direction === 'collect') {
+        events.push({
+          type: 'income',
+          playerId: currentPlayer.id,
+          amount: cashEffect.amount,
+          reason: 'card',
+        })
+      } else if (cashEffect?.direction === 'pay') {
+        events.push({
+          type: 'payment',
+          payerId: currentPlayer.id,
+          payeeId: null,
+          amount: cashEffect.amount,
+          reason: 'card',
+        })
+      }
+
+      events.push({
+        type: 'card-returned',
+        playerId: currentPlayer.id,
+        deck: pendingCard.deck,
+        cardId: pendingCard.cardId,
+      })
+
       return {
         ...state,
+        players:
+          cashChange === 0
+            ? state.players
+            : state.players.map((player) =>
+                player.id === currentPlayer.id
+                  ? { ...player, cash: player.cash + cashChange }
+                  : player,
+              ),
         decks: {
           ...state.decks,
           [deckKey]: [...state.decks[deckKey], pendingCard.cardId],
         },
         pendingCard: null,
-        log: appendGameLog(state.log, [
-          {
-            type: 'card-returned',
-            playerId: currentPlayer.id,
-            deck: pendingCard.deck,
-            cardId: pendingCard.cardId,
-          },
-        ]),
+        log: appendGameLog(state.log, events),
       }
     }
     case 'end-turn': {
