@@ -23,9 +23,9 @@ If `pnpm` is not already on your `PATH`, run each script below as `npm exec --ye
 
 ## Run and build
 
-After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm typecheck` to check the strict TypeScript source, `pnpm format` to apply formatting, `pnpm format:check` to verify formatting, `pnpm lint` to run ESLint, `pnpm test` to run Vitest, and `pnpm build` to create production output in `dist/`.
+After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm typecheck` to check the strict TypeScript source, `pnpm format` to apply formatting, `pnpm format:check` to verify formatting, `pnpm lint` to run ESLint, `pnpm test` to run Vitest, `pnpm contrast:check` to verify color contrast, and `pnpm build` to create production output in `dist/`.
 
-GitHub Actions runs the frozen install, format check, lint, type-check, tests, and production build on pull requests to `main` and pushes to `main`.
+GitHub Actions runs the frozen install, format check, lint, color-contrast check, type-check, tests, and production build on pull requests to `main` and pushes to `main`.
 
 ## Contributing
 

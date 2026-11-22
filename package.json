@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "contrast:check": "node scripts/check-contrast.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
