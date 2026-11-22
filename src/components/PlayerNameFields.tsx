@@ -1,7 +1,7 @@
 import type { ChangeEvent, ReactElement } from 'react'
-import type { PlayerCount } from './PlayerCountSelector'
+import { MAX_PLAYER_NAME_LENGTH, type PlayerCount } from '../setup/config'
 
-export const MAX_PLAYER_NAME_LENGTH = 20
+export { MAX_PLAYER_NAME_LENGTH } from '../setup/config'
 
 export function normalizePlayerNames(
   playerNames: readonly string[],
@@ -32,6 +32,7 @@ interface PlayerNameFieldsProps {
   playerNames: readonly string[]
   onPlayerNameChange: (index: number, name: string) => void
   onNormalizeNames: () => void
+  fieldErrors?: readonly (string | null)[]
 }
 
 export default function PlayerNameFields({
@@ -39,6 +40,7 @@ export default function PlayerNameFields({
   playerNames,
   onPlayerNameChange,
   onNormalizeNames,
+  fieldErrors = [],
 }: PlayerNameFieldsProps): ReactElement {
   function handleChange(index: number, event: ChangeEvent<HTMLInputElement>) {
     onPlayerNameChange(index, event.currentTarget.value.slice(0, MAX_PLAYER_NAME_LENGTH))
@@ -56,13 +58,23 @@ export default function PlayerNameFields({
           <label className="player-name-field" key={index}>
             <span>Player {index + 1} name</span>
             <input
-              aria-describedby="player-name-help"
+              aria-describedby={
+                fieldErrors[index]
+                  ? `player-name-help player-name-error-${index}`
+                  : 'player-name-help'
+              }
+              aria-invalid={fieldErrors[index] ? 'true' : undefined}
               maxLength={MAX_PLAYER_NAME_LENGTH}
               onBlur={onNormalizeNames}
               onChange={(event) => handleChange(index, event)}
               type="text"
               value={playerNames[index] ?? ''}
             />
+            {fieldErrors[index] && (
+              <span className="setup-field-error" id={`player-name-error-${index}`}>
+                {fieldErrors[index]}
+              </span>
+            )}
           </label>
         ))}
       </div>

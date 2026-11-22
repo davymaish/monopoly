@@ -1,5 +1,5 @@
 import type { ChangeEvent, ReactElement } from 'react'
-import type { PlayerCount } from './PlayerCountSelector'
+import type { PlayerCount } from '../setup/config'
 
 export const PLAYER_TOKEN_COLORS = [
   { id: 'red', name: 'Red', hex: '#a52832' },
@@ -24,12 +24,14 @@ interface PlayerColorSelectorProps {
   playerCount: PlayerCount
   playerColors: readonly PlayerColor[]
   onPlayerColorChange: (index: number, color: PlayerColor) => void
+  fieldErrors?: readonly (string | null)[]
 }
 
 export default function PlayerColorSelector({
   playerCount,
   playerColors,
   onPlayerColorChange,
+  fieldErrors = [],
 }: PlayerColorSelectorProps): ReactElement {
   function handleChange(index: number, event: ChangeEvent<HTMLSelectElement>) {
     const nextColor = event.currentTarget.value
@@ -60,7 +62,16 @@ export default function PlayerColorSelector({
             <label className="player-color-field" key={index}>
               <span>Player {index + 1} token color</span>
               <span className="player-color-control">
-                <select onChange={(event) => handleChange(index, event)} value={selectedColor}>
+                <select
+                  aria-describedby={
+                    fieldErrors[index]
+                      ? `player-color-help player-color-error-${index}`
+                      : 'player-color-help'
+                  }
+                  aria-invalid={fieldErrors[index] ? 'true' : undefined}
+                  onChange={(event) => handleChange(index, event)}
+                  value={selectedColor}
+                >
                   {PLAYER_TOKEN_COLORS.map((color) => (
                     <option
                       disabled={colorsUsedByOthers.has(color.id)}
@@ -77,6 +88,11 @@ export default function PlayerColorSelector({
                   style={{ backgroundColor: selectedOption?.hex ?? 'transparent' }}
                 />
               </span>
+              {fieldErrors[index] && (
+                <span className="setup-field-error" id={`player-color-error-${index}`}>
+                  {fieldErrors[index]}
+                </span>
+              )}
             </label>
           )
         })}
