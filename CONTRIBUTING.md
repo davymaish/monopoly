@@ -14,22 +14,23 @@ If `pnpm` is not already on your `PATH`, run each script below as `npm exec --ye
 
 Available scripts:
 
-| Command             | Purpose                                 |
-| ------------------- | --------------------------------------- |
-| `pnpm dev`          | Start the Vite development server       |
-| `pnpm format`       | Apply Prettier formatting               |
-| `pnpm format:check` | Check formatting without changing files |
-| `pnpm lint`         | Run ESLint                              |
-| `pnpm typecheck`    | Run the strict TypeScript check         |
-| `pnpm test`         | Run Vitest tests                        |
-| `pnpm build`        | Create the production build in `dist/`  |
+| Command               | Purpose                                 |
+| --------------------- | --------------------------------------- |
+| `pnpm dev`            | Start the Vite development server       |
+| `pnpm format`         | Apply Prettier formatting               |
+| `pnpm format:check`   | Check formatting without changing files |
+| `pnpm lint`           | Run ESLint                              |
+| `pnpm typecheck`      | Run the strict TypeScript check         |
+| `pnpm test`           | Run Vitest tests                        |
+| `pnpm contrast:check` | Check theme color contrast              |
+| `pnpm build`          | Create the production build in `dist/`  |
 
 GitHub Actions runs the frozen install and all checks above on pull requests to `main` and pushes to `main`.
 
 ## Branches, commits, and pull requests
 
 - Start each change from the latest `main`; do not commit directly to `main`.
-- Use a focused branch such as `feat/pr-<number>-<short-name>`, `chore/pr-<number>-<short-name>`, `fix/pr-<number>-<short-name>`, or `docs/pr-<number>-<short-name>`.
+- Use a short descriptive branch name such as `app-shell` or `visual-tokens`; a PR number or `chore` prefix is not required.
 - Use Conventional Commit prefixes such as `feat:`, `fix:`, `test:`, `refactor:`, `docs:`, and `chore:`. For a roadmap PR, aim for 2–4 meaningful commits where the work supports that; do not split changes merely to increase the count.
 - Open a PR against `main`. Explain its objective and scope, note relevant rule or implementation decisions, and list the checks run. Include screenshots for visible UI changes.
 - Keep the PR’s checks green and follow repository branch protection. Merge through the agreed repository method; do not bypass protections.
