@@ -89,6 +89,39 @@ describe('board perimeter', () => {
     })
   })
 
+  it('renders the bottom ten spaces in movement order across reversed columns', () => {
+    const { container } = render(<BoardPerimeter />)
+    const bottomTiles = Array.from(
+      container.querySelectorAll<HTMLElement>('.board-tile[data-edge="bottom"]'),
+    )
+    const expectedSpaces = BOARD_SPACES.filter(
+      (space) => space.position >= 0 && space.position < 10,
+    )
+
+    expect(bottomTiles).toHaveLength(10)
+    expect(bottomTiles.map((tile) => Number(tile.dataset.position))).toEqual(
+      expectedSpaces.map((space) => space.position),
+    )
+
+    expectedSpaces.forEach((space, index) => {
+      const tile = bottomTiles[index]
+      const name = tile.querySelector('.board-tile-name')
+
+      expect(tile).toHaveAttribute('data-grid-row', '10')
+      expect(tile).toHaveAttribute('data-grid-column', String(10 - index))
+      expect(name).toHaveTextContent(space.name)
+      expect(name).toHaveClass('board-tile-name--bottom')
+
+      if (space.kind === 'property') {
+        expect(tile).toHaveAttribute('data-group', space.group)
+        expect(tile.querySelector('.board-tile-band')).toHaveClass('board-tile-band--bottom')
+      } else {
+        expect(tile).not.toHaveAttribute('data-group')
+        expect(tile.querySelector('.board-tile-band')).not.toBeInTheDocument()
+      }
+    })
+  })
+
   it('renders all board spaces as labelled perimeter slots with a reserved center', () => {
     render(<BoardPerimeter />)
 
