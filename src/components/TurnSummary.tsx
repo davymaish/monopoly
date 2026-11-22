@@ -32,7 +32,9 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
     case 'movement':
       return `${getPlayerName(players, event.playerId)} moved ${event.spacesMoved} spaces to ${getSpaceName(event.to)}.`
     case 'income':
-      return `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} for passing GO.`
+      return event.reason === 'go-salary'
+        ? `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} for passing GO.`
+        : `${getPlayerName(players, event.playerId)} collected ${formatCash(event.amount)} from a card.`
     case 'payment': {
       const payee = event.payeeId ? getPlayerName(players, event.payeeId) : 'the bank'
       const reason = event.reason.replace(/-/g, ' ')
