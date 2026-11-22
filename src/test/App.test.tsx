@@ -22,10 +22,26 @@ describe('App shell', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: 'Game setup' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: '2 players' })).toBeChecked()
+    expect(screen.getAllByRole('textbox')).toHaveLength(2)
 
     fireEvent.click(screen.getByRole('radio', { name: '4 players' }))
 
     expect(screen.getByRole('radio', { name: '4 players' })).toBeChecked()
+    expect(screen.getAllByRole('textbox')).toHaveLength(4)
+  })
+
+  it('trims entered names and replaces blank names with their player defaults', () => {
+    render(<App />)
+
+    const firstName = screen.getByRole('textbox', { name: 'Player 1 name' })
+    fireEvent.change(firstName, { target: { value: '  Alice  ' } })
+    fireEvent.blur(firstName)
+    expect(firstName).toHaveValue('Alice')
+
+    const secondName = screen.getByRole('textbox', { name: 'Player 2 name' })
+    fireEvent.change(secondName, { target: { value: '   ' } })
+    fireEvent.blur(secondName)
+    expect(secondName).toHaveValue('Player 2')
   })
 
   it('shows a deed card when a property is hovered', () => {
