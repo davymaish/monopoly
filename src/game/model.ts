@@ -45,7 +45,7 @@ export interface CardDeckState {
 export type GameLogEvent =
   | { type: 'roll'; playerId: PlayerId; dice: DiceRoll }
   | { type: 'movement'; playerId: PlayerId; from: number; to: number; spacesMoved: number }
-  | { type: 'income'; playerId: PlayerId; amount: number; reason: 'go-salary' }
+  | { type: 'income'; playerId: PlayerId; amount: number; reason: 'go-salary' | 'card' }
   | {
       type: 'payment'
       payerId: PlayerId
