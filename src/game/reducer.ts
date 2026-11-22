@@ -1,5 +1,5 @@
 import type { GameReducer } from './actions'
-import { calculateDestinationPosition } from './movement'
+import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
@@ -17,8 +17,15 @@ export const gameReducer: GameReducer = (state, action) => {
       }
 
       const destination = calculateDestinationPosition(currentPlayer.position, state.dice)
+      const passesGo = currentPlayer.position + state.dice[0] + state.dice[1] >= BOARD_SPACE_COUNT
       const players = state.players.map((player, index) =>
-        index === state.currentPlayerIndex ? { ...player, position: destination } : player,
+        index === state.currentPlayerIndex
+          ? {
+              ...player,
+              position: destination,
+              cash: player.cash + (passesGo ? GO_SALARY : 0),
+            }
+          : player,
       )
 
       return { ...state, players, phase: 'awaiting-player-action' }
