@@ -34,19 +34,22 @@ export default function BoardPerimeter() {
       {BOARD_SPACES.map((space) => {
         const { row, column } = getBoardGridCoordinates(space.position)
         const isTopEdge = space.position >= 20 && space.position < 30
+        const isRightEdge = space.position >= 30
+        const edge = isTopEdge ? 'top' : isRightEdge ? 'right' : undefined
         const isProperty = space.kind === 'property'
+        const tileClassName = edge ? `board-tile board-tile--${edge}` : 'board-tile'
 
         return (
           <div
             key={space.id}
-            className={`board-tile${isTopEdge ? ' board-tile--top' : ''}`}
+            className={tileClassName}
             role="listitem"
             aria-label={`${space.name}, space ${space.position + 1}`}
             data-position={space.position}
             data-grid-row={row}
             data-grid-column={column}
             data-kind={space.kind}
-            data-edge={isTopEdge ? 'top' : undefined}
+            data-edge={edge}
             data-group={isProperty ? space.group : undefined}
             style={{ gridRow: row + 1, gridColumn: column + 1 }}
           >
@@ -54,6 +57,12 @@ export default function BoardPerimeter() {
               <span className="board-tile-top-content" aria-hidden="true">
                 {isProperty && <span className="board-tile-band" />}
                 <span className="board-tile-name">{space.name}</span>
+              </span>
+            )}
+            {isRightEdge && (
+              <span className="board-tile-right-content" aria-hidden="true">
+                <span className="board-tile-name board-tile-name--right">{space.name}</span>
+                {isProperty && <span className="board-tile-band board-tile-band--right" />}
               </span>
             )}
           </div>
