@@ -1,6 +1,6 @@
 # Monopoly
 
-An in-progress browser-based, local pass-and-play Monopoly game for 2–4 players sharing one device. A minimal Vite shell is in place; gameplay and application code will arrive in focused pull requests.
+An in-progress browser-based, local pass-and-play Monopoly game for 2–4 players sharing one device. A typed React/TypeScript entry is in place; game features will arrive in focused pull requests.
 
 ## Planned stack
 
@@ -21,11 +21,11 @@ The command invokes the pinned pnpm version and fails rather than rewriting the 
 
 ## Run and build
 
-After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm build` to create the production output in `dist/`.
+After installation, `pnpm dev` starts the local Vite server at `http://localhost:5173`. Run `pnpm typecheck` to check the strict TypeScript source, and `pnpm build` to create production output in `dist/`.
 
 ## Project layout
 
-The application source will live under `src/`, organized by responsibility:
+The current entry points are `src/main.tsx` and `src/App.tsx`; the source will expand by responsibility:
 
 - `src/app/` — application shell and top-level game screen
 - `src/game/` — typed board data, rules, state, and transitions
@@ -33,7 +33,7 @@ The application source will live under `src/`, organized by responsibility:
 - `src/styles/` — board and responsive styles
 - `src/test/` — rule, reducer, and component tests
 
-The `src/` tree will be added when the application shell is introduced. The repository root currently contains shared project configuration, documentation, and the license.
+The `src/` tree will expand across the roadmap. The repository root contains shared project configuration, documentation, and the license.
 
 ## Repository baseline
 
@@ -41,4 +41,4 @@ The `src/` tree will be added when the application shell is introduced. The repo
 - `.editorconfig` defines consistent UTF-8, LF line endings, final newlines, and two-space indentation.
 - `LICENSE` currently provides the MIT license.
 
-Vite dev/build scripts are available. React/TypeScript, test tooling, CI, and game functionality remain later roadmap milestones.
+Vite and the typed React/TypeScript entry are available; the strict check runs with `pnpm typecheck`. Formatting/lint rules, test tooling, CI, and game functionality remain later roadmap milestones.
