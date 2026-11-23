@@ -131,7 +131,7 @@ export default function TurnSummary({
       )}
       {gameState.phase === 'awaiting-player-action' && gameState.pendingCard && (
         <>
-          <p className="turn-summary-status">
+          <p className="turn-summary-status" role="status" aria-live="polite">
             {pendingCardDefinition?.text ?? gameState.pendingCard.cardId}
           </p>
           <div className="turn-summary-actions">

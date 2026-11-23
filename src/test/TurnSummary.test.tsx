@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { createInitialGameState } from '../game/initial-state'
 import TurnSummary from '../components/TurnSummary'
 
@@ -40,5 +40,32 @@ describe('TurnSummary', () => {
     )
 
     expect(screen.getByText('Alex moved back 3 spaces to Income Tax.')).toBeInTheDocument()
+  })
+
+  it('presents the card instruction and requires Continue before ending the turn', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      pendingCard: { deck: 'chance' as const, cardId: 'chance-poor-tax', playerId: 'player-1' },
+      phase: 'awaiting-player-action' as const,
+    }
+    const onCompleteCard = vi.fn()
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={onCompleteCard}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('Pay poor tax of $15.')
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(onCompleteCard).toHaveBeenCalledTimes(1)
   })
 })
