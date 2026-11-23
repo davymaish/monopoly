@@ -200,6 +200,34 @@ function resolveCardMovement(
   return { players, landingResolution, events }
 }
 
+function applyJailTransition(
+  state: GameState,
+  players: Player[],
+  currentPlayer: Player,
+  source: 'board' | 'card',
+): {
+  players: Player[]
+  landingResolution: GameState['landingResolution']
+  event: Extract<GameLogEvent, { type: 'sent-to-jail' }>
+} | null {
+  const jailSpace = BOARD_SPACES.find((space) => space.id === 'jail')
+  if (!jailSpace) return null
+
+  return {
+    players: players.map((player) =>
+      player.id === currentPlayer.id ? { ...player, position: jailSpace.position } : player,
+    ),
+    landingResolution: resolveLanding(
+      jailSpace,
+      state.ownership,
+      state.players.map(({ id }) => id),
+      currentPlayer.id,
+      state.mortgagedProperties,
+    ),
+    event: { type: 'sent-to-jail', playerId: currentPlayer.id, source },
+  }
+}
+
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
     case 'roll-dice':
@@ -232,6 +260,7 @@ export const gameReducer: GameReducer = (state, action) => {
         currentPlayer.id,
         state.mortgagedProperties,
       )
+      const sentToJail = landingResolution.type === 'go-to-jail'
       const rentOwnerId =
         landingResolution?.type === 'owned-property' && !landingResolution.ownedByCurrentPlayer
           ? landingResolution.ownerId
@@ -248,8 +277,9 @@ export const gameReducer: GameReducer = (state, action) => {
                   state.dice[0] + state.dice[1],
                 )
               : 0
-      const passesGo = currentPlayer.position + state.dice[0] + state.dice[1] >= BOARD_SPACE_COUNT
-      const players = state.players.map((player, index) => ({
+      const passesGo =
+        !sentToJail && currentPlayer.position + state.dice[0] + state.dice[1] >= BOARD_SPACE_COUNT
+      const movedPlayers = state.players.map((player, index) => ({
         ...player,
         ...(index === state.currentPlayerIndex ? { position: destination } : {}),
         cash:
@@ -257,6 +287,9 @@ export const gameReducer: GameReducer = (state, action) => {
           (index === state.currentPlayerIndex ? (passesGo ? GO_SALARY : 0) - rentAmount : 0) +
           (player.id === rentOwnerId ? rentAmount : 0),
       }))
+      const jailTransition = sentToJail
+        ? applyJailTransition(state, movedPlayers, currentPlayer, 'board')
+        : null
       const events: GameLogEvent[] = [
         {
           type: 'movement',
@@ -275,6 +308,8 @@ export const gameReducer: GameReducer = (state, action) => {
           reason: 'go-salary',
         })
       }
+
+      if (jailTransition) events.push(jailTransition.event)
 
       if (rentAmount > 0 && rentOwnerId) {
         events.push({
@@ -296,8 +331,8 @@ export const gameReducer: GameReducer = (state, action) => {
 
       return {
         ...state,
-        players,
-        landingResolution,
+        players: jailTransition?.players ?? movedPlayers,
+        landingResolution: jailTransition?.landingResolution ?? landingResolution,
         phase: 'awaiting-player-action',
         log: appendGameLog(state.log, events),
       }
@@ -401,7 +436,14 @@ export const gameReducer: GameReducer = (state, action) => {
       let landingResolution = state.landingResolution
       const events: GameLogEvent[] = []
 
-      if (effect?.type === 'cash') {
+      if (effect?.type === 'go-to-jail') {
+        const jailTransition = applyJailTransition(state, players, currentPlayer, 'card')
+        if (jailTransition) {
+          players = jailTransition.players
+          landingResolution = jailTransition.landingResolution
+          events.push(jailTransition.event)
+        }
+      } else if (effect?.type === 'cash') {
         const cashChange = effect.direction === 'collect' ? effect.amount : -effect.amount
         players = state.players.map((player) =>
           player.id === currentPlayer.id ? { ...player, cash: player.cash + cashChange } : player,
