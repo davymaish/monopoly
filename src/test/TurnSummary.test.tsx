@@ -68,4 +68,31 @@ describe('TurnSummary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
     expect(onCompleteCard).toHaveBeenCalledTimes(1)
   })
+
+  it('announces doubles and offers Roll again after the landing is resolved', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      extraRollAvailable: true,
+      phase: 'awaiting-player-action' as const,
+    }
+    const onEndTurn = vi.fn()
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onMovePlayer={() => {}}
+        onEndTurn={onEndTurn}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Doubles! Resolve this space, then roll again.',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Roll again' }))
+    expect(onEndTurn).toHaveBeenCalledTimes(1)
+  })
 })

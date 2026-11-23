@@ -43,6 +43,7 @@ describe('Go to Jail transitions', () => {
     const completed = gameReducer(rolled, { type: 'move-player' })
 
     expect(completed.players[0]).toMatchObject({ position: 10, cash: 1300 })
+    expect(completed).toMatchObject({ doublesCount: 0, extraRollAvailable: false })
     expect(completed.landingResolution?.type).toBe('jail-visit')
     expect(completed.log.slice(-2).map(({ event }) => event)).toEqual([
       { type: 'movement', playerId: 'player-1', from: 28, to: 30, spacesMoved: 2 },
@@ -57,8 +58,10 @@ describe('Go to Jail transitions', () => {
     'sends a player holding $cardId directly to Jail without salary',
     ({ deck, cardId }) => {
       const initialState = createInitialGameState(setup, () => 0)
-      const state = {
+      const state: GameState = {
         ...initialState,
+        doublesCount: 1,
+        extraRollAvailable: true,
         players: initialState.players.map((player, index) =>
           index === 0 ? { ...player, position: 36, cash: 1300 } : player,
         ),
@@ -67,6 +70,7 @@ describe('Go to Jail transitions', () => {
       const completed = gameReducer(drawn, { type: 'complete-card' })
 
       expect(completed.players[0]).toMatchObject({ position: 10, cash: 1300 })
+      expect(completed).toMatchObject({ doublesCount: 0, extraRollAvailable: false })
       expect(completed.landingResolution?.type).toBe('jail-visit')
       expect(completed.log.slice(-2).map(({ event }) => event)).toEqual([
         { type: 'sent-to-jail', playerId: 'player-1', source: 'card' },

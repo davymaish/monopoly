@@ -65,6 +65,7 @@ describe('App shell', () => {
     try {
       render(<App />)
       fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+      randomSpy.mockReturnValueOnce(0.5).mockReturnValueOnce(0.9)
 
       const summary = screen.getByRole('region', { name: 'Turn summary' })
       expect(within(summary).getByText('Player 1', { selector: 'strong' })).toBeInTheDocument()
@@ -93,6 +94,7 @@ describe('App shell', () => {
     try {
       render(<App />)
       fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+      randomSpy.mockReturnValueOnce(0.2).mockReturnValueOnce(0.9)
       fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
       fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
 
@@ -127,6 +129,7 @@ describe('App shell', () => {
     try {
       render(<App />)
       fireEvent.click(screen.getByRole('button', { name: 'Start game' }))
+      randomSpy.mockReturnValueOnce(0.2).mockReturnValueOnce(0.9)
       fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
       fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
 
@@ -179,7 +182,7 @@ describe('App shell', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
 
       expect(screen.getByText('$1,700')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Roll again' })).toBeEnabled()
       const activity = screen.getByRole('list', { name: 'Recent activity' })
       expect(within(activity).getByText(/Player 1 collected \$200 from a card/)).toBeInTheDocument()
       expect(
@@ -188,6 +191,11 @@ describe('App shell', () => {
       expect(
         within(activity).getByText(/returned the card to the bottom of the Community Chest deck/),
       ).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Roll again' }))
+      randomSpy.mockReturnValueOnce(0.2).mockReturnValueOnce(0.9)
+      fireEvent.click(screen.getByRole('button', { name: 'Roll dice' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Complete movement' }))
+      expect(screen.getByRole('button', { name: 'End turn' })).toBeEnabled()
     } finally {
       randomSpy.mockRestore()
     }
