@@ -412,6 +412,85 @@ export const gameReducer: GameReducer = (state, action) => {
             { type: 'income', playerId: currentPlayer.id, amount: GO_SALARY, reason: 'go-salary' },
           )
         }
+      } else if (effect?.type === 'advance-to' && effect.destination !== 'go') {
+        const destination = BOARD_SPACES.find((space) => space.id === effect.destination)
+
+        if (destination) {
+          const spacesMoved =
+            (destination.position - currentPlayer.position + BOARD_SPACE_COUNT) % BOARD_SPACE_COUNT
+          const passesGo =
+            effect.goSalary === 'if-passed' && destination.position < currentPlayer.position
+          landingResolution = resolveLanding(
+            destination,
+            state.ownership,
+            state.players.map(({ id }) => id),
+            currentPlayer.id,
+            state.mortgagedProperties,
+          )
+          const rentOwnerId =
+            landingResolution?.type === 'owned-property' && !landingResolution.ownedByCurrentPlayer
+              ? landingResolution.ownerId
+              : null
+          const rentAmount =
+            rentOwnerId && destination.kind === 'property'
+              ? calculateStreetRent(destination.id, state.ownership)
+              : rentOwnerId && destination.kind === 'railroad'
+                ? calculateRailroadRent(destination.id, state.ownership)
+                : rentOwnerId && destination.kind === 'utility' && state.dice
+                  ? calculateUtilityPropertyRent(
+                      destination.id,
+                      state.ownership,
+                      state.dice[0] + state.dice[1],
+                    )
+                  : 0
+          const goSalary = passesGo ? GO_SALARY : 0
+
+          players = state.players.map((player) =>
+            player.id === currentPlayer.id
+              ? {
+                  ...player,
+                  position: destination.position,
+                  cash: player.cash + goSalary - rentAmount,
+                }
+              : player.id === rentOwnerId
+                ? { ...player, cash: player.cash + rentAmount }
+                : player,
+          )
+          events.push({
+            type: 'movement',
+            playerId: currentPlayer.id,
+            from: currentPlayer.position,
+            to: destination.position,
+            spacesMoved,
+          })
+
+          if (passesGo) {
+            events.push({
+              type: 'income',
+              playerId: currentPlayer.id,
+              amount: GO_SALARY,
+              reason: 'go-salary',
+            })
+          }
+
+          if (rentAmount > 0 && rentOwnerId) {
+            events.push({
+              type: 'payment',
+              payerId: currentPlayer.id,
+              payeeId: rentOwnerId,
+              amount: rentAmount,
+              reason: 'rent',
+            })
+          } else if (landingResolution?.type === 'mortgaged-property') {
+            events.push({
+              type: 'rent-skipped',
+              payerId: currentPlayer.id,
+              ownerId: landingResolution.ownerId,
+              propertyId: landingResolution.spaceId,
+              reason: 'mortgaged',
+            })
+          }
+        }
       }
 
       events.push({
