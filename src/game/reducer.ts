@@ -204,7 +204,7 @@ function applyJailTransition(
   state: GameState,
   players: Player[],
   currentPlayer: Player,
-  source: 'board' | 'card',
+  source: 'board' | 'card' | 'third-double',
 ): {
   players: Player[]
   landingResolution: GameState['landingResolution']
@@ -252,6 +252,26 @@ export const gameReducer: GameReducer = (state, action) => {
 
       if (state.phase !== 'resolving-turn' || state.dice === null || !currentPlayer) {
         return state
+      }
+
+      if (state.doublesCount >= 3 && state.dice[0] === state.dice[1]) {
+        const jailTransition = applyJailTransition(
+          state,
+          state.players,
+          currentPlayer,
+          'third-double',
+        )
+        if (!jailTransition) return state
+
+        return {
+          ...state,
+          players: jailTransition.players,
+          landingResolution: jailTransition.landingResolution,
+          doublesCount: 0,
+          extraRollAvailable: false,
+          phase: 'awaiting-player-action',
+          log: appendGameLog(state.log, [jailTransition.event]),
+        }
       }
 
       const destination = calculateDestinationPosition(currentPlayer.position, state.dice)

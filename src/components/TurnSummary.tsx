@@ -34,9 +34,13 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
       return `${getPlayerName(players, event.playerId)} moved ${direction}${Math.abs(event.spacesMoved)} spaces to ${getSpaceName(event.to)}.`
     }
     case 'sent-to-jail':
-      return event.source === 'board'
-        ? `${getPlayerName(players, event.playerId)} was sent directly to Jail by the Go to Jail space.`
-        : `${getPlayerName(players, event.playerId)} was sent directly to Jail by a card.`
+      if (event.source === 'board') {
+        return `${getPlayerName(players, event.playerId)} was sent directly to Jail by the Go to Jail space.`
+      }
+      if (event.source === 'third-double') {
+        return `${getPlayerName(players, event.playerId)} was sent directly to Jail after rolling doubles three times.`
+      }
+      return `${getPlayerName(players, event.playerId)} was sent directly to Jail by a card.`
     case 'income':
       return event.reason === 'go-salary'
         ? `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} in GO salary.`
