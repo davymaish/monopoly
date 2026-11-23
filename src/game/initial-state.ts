@@ -76,6 +76,8 @@ export function createInitialGameState(
     decks: createShuffledDecks(randomSource),
     pendingCard: null,
     heldJailFreeCards: [],
+    doublesCount: 0,
+    extraRollAvailable: false,
     log: [],
     phase: 'awaiting-roll',
   }

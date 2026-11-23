@@ -106,6 +106,11 @@ export default function TurnSummary({
         Current player: <strong>{currentPlayer?.name ?? 'Unknown player'}</strong>
       </p>
       <RollDiceControl onRollDice={onRollDice} phase={gameState.phase} />
+      {gameState.phase === 'awaiting-player-action' && gameState.extraRollAvailable && (
+        <p className="turn-summary-status" role="status">
+          Doubles! Resolve this space, then roll again.
+        </p>
+      )}
       {gameState.phase === 'resolving-turn' && (
         <div className="turn-summary-actions">
           <button className="turn-action-button" onClick={onMovePlayer} type="button">
@@ -144,7 +149,7 @@ export default function TurnSummary({
       {gameState.phase === 'awaiting-player-action' && !hasPendingPlayerAction && (
         <div className="turn-summary-actions">
           <button className="turn-action-button" onClick={onEndTurn} type="button">
-            End turn
+            {gameState.extraRollAvailable ? 'Roll again' : 'End turn'}
           </button>
         </div>
       )}

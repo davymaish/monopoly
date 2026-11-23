@@ -235,9 +235,12 @@ export const gameReducer: GameReducer = (state, action) => {
         return state
       }
 
+      const isDoubles = action.dice[0] === action.dice[1]
       return {
         ...state,
         dice: action.dice,
+        doublesCount: isDoubles ? state.doublesCount + 1 : 0,
+        extraRollAvailable: isDoubles,
         landingResolution: null,
         phase: 'resolving-turn',
         log: appendGameLog(state.log, [
@@ -333,6 +336,7 @@ export const gameReducer: GameReducer = (state, action) => {
         ...state,
         players: jailTransition?.players ?? movedPlayers,
         landingResolution: jailTransition?.landingResolution ?? landingResolution,
+        ...(jailTransition ? { doublesCount: 0, extraRollAvailable: false } : {}),
         phase: 'awaiting-player-action',
         log: appendGameLog(state.log, events),
       }
@@ -434,6 +438,8 @@ export const gameReducer: GameReducer = (state, action) => {
       const opponents = state.players.filter((player) => player.id !== currentPlayer.id)
       let players = state.players
       let landingResolution = state.landingResolution
+      let doublesCount = state.doublesCount
+      let extraRollAvailable = state.extraRollAvailable
       const events: GameLogEvent[] = []
 
       if (effect?.type === 'go-to-jail') {
@@ -441,6 +447,8 @@ export const gameReducer: GameReducer = (state, action) => {
         if (jailTransition) {
           players = jailTransition.players
           landingResolution = jailTransition.landingResolution
+          doublesCount = 0
+          extraRollAvailable = false
           events.push(jailTransition.event)
         }
       } else if (effect?.type === 'cash') {
@@ -634,6 +642,8 @@ export const gameReducer: GameReducer = (state, action) => {
         ...state,
         players,
         landingResolution,
+        doublesCount,
+        extraRollAvailable,
         decks: {
           ...state.decks,
           [deckKey]: [...state.decks[deckKey], pendingCard.cardId],
@@ -657,6 +667,17 @@ export const gameReducer: GameReducer = (state, action) => {
       }
 
       const currentPlayer = state.players[state.currentPlayerIndex]
+
+      if (state.extraRollAvailable) {
+        return {
+          ...state,
+          landingResolution: null,
+          dice: null,
+          extraRollAvailable: false,
+          phase: 'awaiting-roll',
+        }
+      }
+
       const nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length
       const nextPlayer = state.players[nextPlayerIndex]
 
@@ -667,6 +688,8 @@ export const gameReducer: GameReducer = (state, action) => {
       return {
         ...state,
         currentPlayerIndex: nextPlayerIndex,
+        doublesCount: 0,
+        extraRollAvailable: false,
         landingResolution: null,
         dice: null,
         phase: 'awaiting-roll',

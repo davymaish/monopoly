@@ -138,6 +138,8 @@ export interface GameState {
   decks: CardDeckState
   pendingCard: DrawnCard | null
   heldJailFreeCards: HeldJailFreeCard[]
+  doublesCount: number
+  extraRollAvailable: boolean
   log: GameLogEntry[]
   phase: GamePhase
 }
