@@ -6,6 +6,7 @@ import { appendGameLog } from './log'
 import type { AuctionState, GameLogEvent, GameState, Player, PlayerId } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 import { getPurchasableDeedById } from './purchasable'
+import { RAILROADS } from './railroad-data'
 import { calculateRailroadRent, calculateStreetRent, calculateUtilityPropertyRent } from './rent'
 import { calculateTaxAmount } from './tax'
 import { getCardDefinition } from './cards'
@@ -113,6 +114,7 @@ function resolveCardMovement(
   destination: BoardSpace,
   spacesMoved: number,
   goSalary: number,
+  rentMultiplier: 1 | 2 = 1,
 ): {
   players: Player[]
   landingResolution: GameState['landingResolution']
@@ -133,7 +135,7 @@ function resolveCardMovement(
     rentOwnerId && destination.kind === 'property'
       ? calculateStreetRent(destination.id, state.ownership)
       : rentOwnerId && destination.kind === 'railroad'
-        ? calculateRailroadRent(destination.id, state.ownership)
+        ? calculateRailroadRent(destination.id, state.ownership, rentMultiplier)
         : rentOwnerId && destination.kind === 'utility' && state.dice
           ? calculateUtilityPropertyRent(
               destination.id,
@@ -512,6 +514,27 @@ export const gameReducer: GameReducer = (state, action) => {
             destination,
             spacesMoved,
             passesGo ? GO_SALARY : 0,
+          )
+          players = movement.players
+          landingResolution = movement.landingResolution
+          events.push(...movement.events)
+        }
+      } else if (effect?.type === 'advance-to-nearest-railroad') {
+        const destination =
+          RAILROADS.find((railroad) => railroad.position > currentPlayer.position) ?? RAILROADS[0]
+
+        if (destination) {
+          const spacesMoved =
+            (destination.position - currentPlayer.position + BOARD_SPACE_COUNT) % BOARD_SPACE_COUNT
+          const passesGo =
+            effect.goSalary === 'if-passed' && destination.position < currentPlayer.position
+          const movement = resolveCardMovement(
+            state,
+            currentPlayer,
+            destination,
+            spacesMoved,
+            passesGo ? GO_SALARY : 0,
+            effect.rentMultiplier,
           )
           players = movement.players
           landingResolution = movement.landingResolution
