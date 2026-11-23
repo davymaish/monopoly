@@ -29,8 +29,10 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
   switch (event.type) {
     case 'roll':
       return `${getPlayerName(players, event.playerId)} rolled ${event.dice[0]} and ${event.dice[1]}.`
-    case 'movement':
-      return `${getPlayerName(players, event.playerId)} moved ${event.spacesMoved} spaces to ${getSpaceName(event.to)}.`
+    case 'movement': {
+      const direction = event.spacesMoved < 0 ? 'back ' : ''
+      return `${getPlayerName(players, event.playerId)} moved ${direction}${Math.abs(event.spacesMoved)} spaces to ${getSpaceName(event.to)}.`
+    }
     case 'income':
       return event.reason === 'go-salary'
         ? `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} in GO salary.`

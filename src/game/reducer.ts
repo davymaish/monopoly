@@ -1,8 +1,9 @@
 import type { GameReducer } from './actions'
 import { BOARD_SPACES } from './board'
+import type { BoardSpace } from './board-space'
 import { resolveLanding } from './landing'
 import { appendGameLog } from './log'
-import type { AuctionState, GameLogEvent, GameState, PlayerId } from './model'
+import type { AuctionState, GameLogEvent, GameState, Player, PlayerId } from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 import { getPurchasableDeedById } from './purchasable'
 import { calculateRailroadRent, calculateStreetRent, calculateUtilityPropertyRent } from './rent'
@@ -104,6 +105,91 @@ function calculatePropertyRepairCost(
 
     return total + buildings.houses * houseCost + buildings.hotels * hotelCost
   }, 0)
+}
+
+function resolveCardMovement(
+  state: GameState,
+  currentPlayer: Player,
+  destination: BoardSpace,
+  spacesMoved: number,
+  goSalary: number,
+): {
+  players: Player[]
+  landingResolution: GameState['landingResolution']
+  events: GameLogEvent[]
+} {
+  const landingResolution = resolveLanding(
+    destination,
+    state.ownership,
+    state.players.map(({ id }) => id),
+    currentPlayer.id,
+    state.mortgagedProperties,
+  )
+  const rentOwnerId =
+    landingResolution.type === 'owned-property' && !landingResolution.ownedByCurrentPlayer
+      ? landingResolution.ownerId
+      : null
+  const rentAmount =
+    rentOwnerId && destination.kind === 'property'
+      ? calculateStreetRent(destination.id, state.ownership)
+      : rentOwnerId && destination.kind === 'railroad'
+        ? calculateRailroadRent(destination.id, state.ownership)
+        : rentOwnerId && destination.kind === 'utility' && state.dice
+          ? calculateUtilityPropertyRent(
+              destination.id,
+              state.ownership,
+              state.dice[0] + state.dice[1],
+            )
+          : 0
+  const players = state.players.map((player) =>
+    player.id === currentPlayer.id
+      ? {
+          ...player,
+          position: destination.position,
+          cash: player.cash + goSalary - rentAmount,
+        }
+      : player.id === rentOwnerId
+        ? { ...player, cash: player.cash + rentAmount }
+        : player,
+  )
+  const events: GameLogEvent[] = [
+    {
+      type: 'movement',
+      playerId: currentPlayer.id,
+      from: currentPlayer.position,
+      to: destination.position,
+      spacesMoved,
+    },
+  ]
+
+  if (goSalary > 0) {
+    events.push({
+      type: 'income',
+      playerId: currentPlayer.id,
+      amount: goSalary,
+      reason: 'go-salary',
+    })
+  }
+
+  if (rentAmount > 0 && rentOwnerId) {
+    events.push({
+      type: 'payment',
+      payerId: currentPlayer.id,
+      payeeId: rentOwnerId,
+      amount: rentAmount,
+      reason: 'rent',
+    })
+  } else if (landingResolution.type === 'mortgaged-property') {
+    events.push({
+      type: 'rent-skipped',
+      payerId: currentPlayer.id,
+      ownerId: landingResolution.ownerId,
+      propertyId: landingResolution.spaceId,
+      reason: 'mortgaged',
+    })
+  }
+
+  return { players, landingResolution, events }
 }
 
 export const gameReducer: GameReducer = (state, action) => {
@@ -420,76 +506,28 @@ export const gameReducer: GameReducer = (state, action) => {
             (destination.position - currentPlayer.position + BOARD_SPACE_COUNT) % BOARD_SPACE_COUNT
           const passesGo =
             effect.goSalary === 'if-passed' && destination.position < currentPlayer.position
-          landingResolution = resolveLanding(
+          const movement = resolveCardMovement(
+            state,
+            currentPlayer,
             destination,
-            state.ownership,
-            state.players.map(({ id }) => id),
-            currentPlayer.id,
-            state.mortgagedProperties,
-          )
-          const rentOwnerId =
-            landingResolution?.type === 'owned-property' && !landingResolution.ownedByCurrentPlayer
-              ? landingResolution.ownerId
-              : null
-          const rentAmount =
-            rentOwnerId && destination.kind === 'property'
-              ? calculateStreetRent(destination.id, state.ownership)
-              : rentOwnerId && destination.kind === 'railroad'
-                ? calculateRailroadRent(destination.id, state.ownership)
-                : rentOwnerId && destination.kind === 'utility' && state.dice
-                  ? calculateUtilityPropertyRent(
-                      destination.id,
-                      state.ownership,
-                      state.dice[0] + state.dice[1],
-                    )
-                  : 0
-          const goSalary = passesGo ? GO_SALARY : 0
-
-          players = state.players.map((player) =>
-            player.id === currentPlayer.id
-              ? {
-                  ...player,
-                  position: destination.position,
-                  cash: player.cash + goSalary - rentAmount,
-                }
-              : player.id === rentOwnerId
-                ? { ...player, cash: player.cash + rentAmount }
-                : player,
-          )
-          events.push({
-            type: 'movement',
-            playerId: currentPlayer.id,
-            from: currentPlayer.position,
-            to: destination.position,
             spacesMoved,
-          })
+            passesGo ? GO_SALARY : 0,
+          )
+          players = movement.players
+          landingResolution = movement.landingResolution
+          events.push(...movement.events)
+        }
+      } else if (effect?.type === 'move-back') {
+        const destinationPosition =
+          (((currentPlayer.position - effect.spaces) % BOARD_SPACE_COUNT) + BOARD_SPACE_COUNT) %
+          BOARD_SPACE_COUNT
+        const destination = BOARD_SPACES.find((space) => space.position === destinationPosition)
 
-          if (passesGo) {
-            events.push({
-              type: 'income',
-              playerId: currentPlayer.id,
-              amount: GO_SALARY,
-              reason: 'go-salary',
-            })
-          }
-
-          if (rentAmount > 0 && rentOwnerId) {
-            events.push({
-              type: 'payment',
-              payerId: currentPlayer.id,
-              payeeId: rentOwnerId,
-              amount: rentAmount,
-              reason: 'rent',
-            })
-          } else if (landingResolution?.type === 'mortgaged-property') {
-            events.push({
-              type: 'rent-skipped',
-              payerId: currentPlayer.id,
-              ownerId: landingResolution.ownerId,
-              propertyId: landingResolution.spaceId,
-              reason: 'mortgaged',
-            })
-          }
+        if (destination) {
+          const movement = resolveCardMovement(state, currentPlayer, destination, -effect.spaces, 0)
+          players = movement.players
+          landingResolution = movement.landingResolution
+          events.push(...movement.events)
         }
       }
 
