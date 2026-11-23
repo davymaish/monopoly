@@ -304,6 +304,7 @@ export const gameReducer: GameReducer = (state, action) => {
       const effect = card?.effect
       const opponents = state.players.filter((player) => player.id !== currentPlayer.id)
       let players = state.players
+      let landingResolution = state.landingResolution
       const events: GameLogEvent[] = []
 
       if (effect?.type === 'cash') {
@@ -378,6 +379,39 @@ export const gameReducer: GameReducer = (state, action) => {
             reason: 'card',
           })
         }
+      } else if (
+        effect?.type === 'advance-to' &&
+        effect.destination === 'go' &&
+        effect.goSalary === 'always'
+      ) {
+        const goSpace = BOARD_SPACES.find((space) => space.id === 'go')
+
+        if (goSpace) {
+          const spacesMoved =
+            (goSpace.position - currentPlayer.position + BOARD_SPACE_COUNT) % BOARD_SPACE_COUNT
+          players = state.players.map((player) =>
+            player.id === currentPlayer.id
+              ? { ...player, position: goSpace.position, cash: player.cash + GO_SALARY }
+              : player,
+          )
+          landingResolution = resolveLanding(
+            goSpace,
+            state.ownership,
+            state.players.map(({ id }) => id),
+            currentPlayer.id,
+            state.mortgagedProperties,
+          )
+          events.push(
+            {
+              type: 'movement',
+              playerId: currentPlayer.id,
+              from: currentPlayer.position,
+              to: goSpace.position,
+              spacesMoved,
+            },
+            { type: 'income', playerId: currentPlayer.id, amount: GO_SALARY, reason: 'go-salary' },
+          )
+        }
       }
 
       events.push({
@@ -390,6 +424,7 @@ export const gameReducer: GameReducer = (state, action) => {
       return {
         ...state,
         players,
+        landingResolution,
         decks: {
           ...state.decks,
           [deckKey]: [...state.decks[deckKey], pendingCard.cardId],
