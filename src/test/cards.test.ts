@@ -9,6 +9,20 @@ describe('classic card decks', () => {
     expect(new Set(COMMUNITY_CHEST_CARDS.map(({ id }) => id)).size).toBe(16)
     expect(CHANCE_CARDS.map(({ id }) => id)).not.toEqual(COMMUNITY_CHEST_CARDS.map(({ id }) => id))
 
+    expect(CHANCE_CARDS.find(({ id }) => id === 'chance-advance-go')?.effect).toEqual({
+      type: 'advance-to',
+      destination: 'go',
+      goSalary: 'always',
+    })
+    expect(CHANCE_CARDS.find(({ id }) => id === 'chance-boardwalk')?.effect).toEqual({
+      type: 'advance-to',
+      destination: 'boardwalk',
+      goSalary: 'never',
+    })
+    expect(
+      COMMUNITY_CHEST_CARDS.find(({ id }) => id === 'community-chest-advance-go')?.effect,
+    ).toEqual({ type: 'advance-to', destination: 'go', goSalary: 'always' })
+
     expect(
       CHANCE_CARDS.find(({ id }) => id === 'chance-nearest-railroad-double-rent')?.effect,
     ).toEqual({ type: 'advance-to-nearest-railroad', rentMultiplier: 2, goSalary: 'if-passed' })
