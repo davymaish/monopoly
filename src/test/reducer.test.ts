@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { GameAction } from '../game/actions'
 import { createInitialGameState } from '../game/initial-state'
+import type { GameState } from '../game/model'
 import { gameReducer } from '../game/reducer'
 
 const setup = {
@@ -327,7 +328,7 @@ describe('gameReducer skeleton', () => {
     })
 
     for (let turn = 0; turn < 4; turn += 1) {
-      const rolledState = gameReducer(state, { type: 'roll-dice', dice: [5, 5] })
+      const rolledState = gameReducer(state, { type: 'roll-dice', dice: [4, 6] })
       const movedState = gameReducer(rolledState, { type: 'move-player' })
       state = gameReducer(movedState, { type: 'end-turn' })
 
@@ -341,6 +342,36 @@ describe('gameReducer skeleton', () => {
         toPlayerId: `player-${((turn + 1) % 4) + 1}`,
       })
     }
+  })
+
+  it('grants one extra roll for doubles and ends the turn after a non-double roll', () => {
+    const initialState = createInitialGameState(setup)
+    let state: GameState = {
+      ...initialState,
+      ownership: {
+        ...initialState.ownership,
+        'oriental-avenue': 'player-1',
+        'connecticut-avenue': 'player-1',
+      },
+    }
+
+    state = gameReducer(state, { type: 'roll-dice', dice: [3, 3] })
+    expect(state).toMatchObject({ doublesCount: 1, extraRollAvailable: true })
+    state = gameReducer(state, { type: 'move-player' })
+    state = gameReducer(state, { type: 'end-turn' })
+    expect(state).toMatchObject({
+      currentPlayerIndex: 0,
+      phase: 'awaiting-roll',
+      dice: null,
+      doublesCount: 1,
+      extraRollAvailable: false,
+    })
+
+    state = gameReducer(state, { type: 'roll-dice', dice: [1, 2] })
+    expect(state).toMatchObject({ doublesCount: 0, extraRollAvailable: false })
+    state = gameReducer(state, { type: 'move-player' })
+    state = gameReducer(state, { type: 'end-turn' })
+    expect(state).toMatchObject({ currentPlayerIndex: 1, phase: 'awaiting-roll', doublesCount: 0 })
   })
 
   it('buys a pending property atomically, charging the active player and logging payment', () => {
