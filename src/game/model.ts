@@ -29,6 +29,13 @@ export interface AuctionState {
   passedPlayerIds: PlayerId[]
 }
 
+export interface DebtResolutionState {
+  debtorId: PlayerId
+  creditorId: PlayerId | null
+  amount: number
+  reason: 'jail-bail'
+}
+
 export interface DrawnCard {
   deck: CardDeck
   cardId: string
@@ -55,7 +62,7 @@ export type GameLogEvent =
   | { type: 'roll'; playerId: PlayerId; dice: DiceRoll }
   | { type: 'movement'; playerId: PlayerId; from: number; to: number; spacesMoved: number }
   | { type: 'sent-to-jail'; playerId: PlayerId; source: 'board' | 'card' | 'third-double' }
-  | { type: 'released-from-jail'; playerId: PlayerId; method: 'doubles' }
+  | { type: 'released-from-jail'; playerId: PlayerId; method: 'doubles' | 'bail' }
   | { type: 'income'; playerId: PlayerId; amount: number; reason: 'go-salary' | 'card' }
   | {
       type: 'payment'
@@ -144,6 +151,7 @@ export interface GameState {
   doublesCount: number
   extraRollAvailable: boolean
   jailAttemptInProgress: boolean
+  debtResolution: DebtResolutionState | null
   log: GameLogEntry[]
   phase: GamePhase
 }

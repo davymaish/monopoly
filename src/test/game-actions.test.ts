@@ -7,6 +7,7 @@ describe('game action contract', () => {
     expectTypeOf<GameAction>().toEqualTypeOf<
       | { type: 'roll-dice'; dice: DiceRoll }
       | { type: 'roll-jail-attempt'; dice: DiceRoll }
+      | { type: 'pay-jail-bail' }
       | { type: 'move-player' }
       | { type: 'end-turn' }
       | { type: 'buy-property'; propertyId: string }
