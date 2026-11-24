@@ -80,6 +80,7 @@ export function createInitialGameState(
     heldJailFreeCards: [],
     doublesCount: 0,
     extraRollAvailable: false,
+    jailAttemptInProgress: false,
     log: [],
     phase: 'awaiting-roll',
   }

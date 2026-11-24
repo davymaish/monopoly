@@ -37,7 +37,7 @@ describe('explicit Jail status', () => {
     }
     const resolvingState = {
       ...jailedState,
-      dice: [2, 2] as const,
+      dice: [2, 3] as const,
       phase: 'resolving-turn' as const,
     }
 

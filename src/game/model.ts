@@ -55,6 +55,7 @@ export type GameLogEvent =
   | { type: 'roll'; playerId: PlayerId; dice: DiceRoll }
   | { type: 'movement'; playerId: PlayerId; from: number; to: number; spacesMoved: number }
   | { type: 'sent-to-jail'; playerId: PlayerId; source: 'board' | 'card' | 'third-double' }
+  | { type: 'released-from-jail'; playerId: PlayerId; method: 'doubles' }
   | { type: 'income'; playerId: PlayerId; amount: number; reason: 'go-salary' | 'card' }
   | {
       type: 'payment'
@@ -142,6 +143,7 @@ export interface GameState {
   heldJailFreeCards: HeldJailFreeCard[]
   doublesCount: number
   extraRollAvailable: boolean
+  jailAttemptInProgress: boolean
   log: GameLogEntry[]
   phase: GamePhase
 }

@@ -247,10 +247,32 @@ export const gameReducer: GameReducer = (state, action) => {
         dice: action.dice,
         doublesCount: isDoubles ? state.doublesCount + 1 : 0,
         extraRollAvailable: isDoubles,
+        jailAttemptInProgress: false,
         landingResolution: null,
         phase: 'resolving-turn',
         log: appendGameLog(state.log, [
           { type: 'roll', playerId: state.players[state.currentPlayerIndex].id, dice: action.dice },
+        ]),
+      }
+    case 'roll-jail-attempt':
+      if (state.phase !== 'awaiting-roll' || !state.players[state.currentPlayerIndex]?.isInJail) {
+        return state
+      }
+
+      return {
+        ...state,
+        dice: action.dice,
+        doublesCount: 0,
+        extraRollAvailable: false,
+        jailAttemptInProgress: true,
+        landingResolution: null,
+        phase: 'resolving-turn',
+        log: appendGameLog(state.log, [
+          {
+            type: 'roll',
+            playerId: state.players[state.currentPlayerIndex].id,
+            dice: action.dice,
+          },
         ]),
       }
     case 'move-player': {
@@ -260,9 +282,35 @@ export const gameReducer: GameReducer = (state, action) => {
         state.phase !== 'resolving-turn' ||
         state.dice === null ||
         !currentPlayer ||
-        currentPlayer.isInJail
+        (currentPlayer.isInJail && !state.jailAttemptInProgress)
       ) {
         return state
+      }
+
+      if (currentPlayer.isInJail) {
+        if (state.dice[0] !== state.dice[1]) {
+          return {
+            ...state,
+            extraRollAvailable: false,
+            jailAttemptInProgress: false,
+            landingResolution: null,
+            phase: 'awaiting-player-action',
+          }
+        }
+
+        const releasedState: GameState = {
+          ...state,
+          players: state.players.map((player) =>
+            player.id === currentPlayer.id ? { ...player, isInJail: false, jailTurns: 0 } : player,
+          ),
+          doublesCount: 0,
+          extraRollAvailable: false,
+          jailAttemptInProgress: false,
+          log: appendGameLog(state.log, [
+            { type: 'released-from-jail', playerId: currentPlayer.id, method: 'doubles' },
+          ]),
+        }
+        return gameReducer(releasedState, { type: 'move-player' })
       }
 
       if (state.doublesCount >= 3 && state.dice[0] === state.dice[1]) {
