@@ -127,6 +127,9 @@ export default function TurnSummary({
       {currentPlayerInJail ? (
         <section className="turn-summary-status" aria-label="Jail turn choices">
           <h4>In Jail</h4>
+          <p aria-live="polite">
+            Failed doubles attempts: {Math.min(currentPlayer.jailTurns, 3)} of 3.
+          </p>
           {gameState.debtResolution ? (
             <>
               <p role="status">
@@ -140,16 +143,13 @@ export default function TurnSummary({
             </>
           ) : (
             <>
-              <p>Choose a legal way to try to leave Jail:</p>
-              <ul>
-                <li>Attempt to roll doubles.</li>
-                <li>Pay $50 bail.</li>
-                {currentPlayer.getOutOfJailFreeCardCount > 0 && (
-                  <li>Use a Get Out of Jail Free card.</li>
-                )}
-              </ul>
               {gameState.phase === 'awaiting-roll' && (
                 <>
+                  <p>
+                    {currentPlayer.jailTurns >= 2
+                      ? 'This is your third and final doubles attempt. If you fail, pay $50 bail and move by this roll.'
+                      : 'Choose how to leave Jail: attempt to roll doubles, pay $50 bail, or use a Get Out of Jail Free card.'}
+                  </p>
                   <button className="turn-action-button" onClick={onRollJailAttempt} type="button">
                     Attempt to roll doubles
                   </button>
