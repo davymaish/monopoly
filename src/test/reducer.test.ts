@@ -344,6 +344,61 @@ describe('gameReducer skeleton', () => {
     }
   })
 
+  it('releases a jailed player on doubles, moves by the total, and resolves the landing', () => {
+    const initialState = createInitialGameState(setup)
+    const jailedState: GameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 10, isInJail: true, jailTurns: 1 } : player,
+      ),
+    }
+
+    expect(gameReducer(jailedState, { type: 'roll-dice', dice: [2, 2] })).toBe(jailedState)
+    const attempt = gameReducer(jailedState, { type: 'roll-jail-attempt', dice: [2, 2] })
+    expect(attempt).toMatchObject({
+      phase: 'resolving-turn',
+      dice: [2, 2],
+      extraRollAvailable: false,
+    })
+
+    const movedState = gameReducer(attempt, { type: 'move-player' })
+    expect(movedState.players[0]).toMatchObject({ position: 14, isInJail: false, jailTurns: 0 })
+    expect(movedState.phase).toBe('awaiting-player-action')
+    expect(movedState.extraRollAvailable).toBe(false)
+    expect(movedState.landingResolution).toMatchObject({
+      type: 'unowned-property',
+      spaceId: 'virginia-avenue',
+    })
+    expect(movedState.log.map(({ event }) => event)).toEqual([
+      { type: 'roll', playerId: 'player-1', dice: [2, 2] },
+      { type: 'released-from-jail', playerId: 'player-1', method: 'doubles' },
+      { type: 'movement', playerId: 'player-1', from: 10, to: 14, spacesMoved: 4 },
+    ])
+  })
+
+  it('keeps a jailed player in Jail after a non-double attempt and lets the turn end', () => {
+    const initialState = createInitialGameState(setup)
+    const jailedState: GameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 10, isInJail: true, jailTurns: 1 } : player,
+      ),
+    }
+    const attempt = gameReducer(jailedState, { type: 'roll-jail-attempt', dice: [2, 3] })
+    const resolvedState = gameReducer(attempt, { type: 'move-player' })
+
+    expect(resolvedState.players[0]).toMatchObject({ position: 10, isInJail: true, jailTurns: 1 })
+    expect(resolvedState).toMatchObject({
+      phase: 'awaiting-player-action',
+      extraRollAvailable: false,
+      landingResolution: null,
+    })
+    expect(resolvedState.log.map(({ event }) => event)).toEqual([
+      { type: 'roll', playerId: 'player-1', dice: [2, 3] },
+    ])
+    expect(gameReducer(resolvedState, { type: 'end-turn' }).currentPlayerIndex).toBe(1)
+  })
+
   it('grants one extra roll for doubles and ends the turn after a non-double roll', () => {
     const initialState = createInitialGameState(setup)
     let state: GameState = {

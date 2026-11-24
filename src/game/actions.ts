@@ -3,6 +3,7 @@ import type { CardDeck } from './cards'
 
 export type GameAction =
   | { type: 'roll-dice'; dice: DiceRoll }
+  | { type: 'roll-jail-attempt'; dice: DiceRoll }
   | { type: 'move-player' }
   | { type: 'end-turn' }
   | { type: 'buy-property'; propertyId: string }
