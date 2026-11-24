@@ -9,6 +9,7 @@ interface TurnSummaryProps {
   onRollDice: () => void
   onRollJailAttempt?: () => void
   onPayJailBail?: () => void
+  onUseJailFreeCard?: () => void
   onMovePlayer: () => void
   onEndTurn: () => void
   onDrawCard: (deck: CardDeck) => void
@@ -44,8 +45,11 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
       }
       return `${getPlayerName(players, event.playerId)} was sent directly to Jail by a card.`
     case 'released-from-jail':
-      return event.method === 'bail'
-        ? `${getPlayerName(players, event.playerId)} paid $50 bail and was released from Jail.`
+      if (event.method === 'bail') {
+        return `${getPlayerName(players, event.playerId)} paid $50 bail and was released from Jail.`
+      }
+      return event.method === 'jail-free-card'
+        ? `${getPlayerName(players, event.playerId)} used a Get Out of Jail Free card.`
         : `${getPlayerName(players, event.playerId)} rolled doubles and was released from Jail.`
     case 'income':
       return event.reason === 'go-salary'
@@ -87,6 +91,7 @@ export default function TurnSummary({
   onRollDice,
   onRollJailAttempt = () => {},
   onPayJailBail = () => {},
+  onUseJailFreeCard = () => {},
   onMovePlayer,
   onEndTurn,
   onDrawCard,
@@ -123,9 +128,16 @@ export default function TurnSummary({
         <section className="turn-summary-status" aria-label="Jail turn choices">
           <h4>In Jail</h4>
           {gameState.debtResolution ? (
-            <p role="status">
-              The $50 bail exceeds available cash. Resolve this debt before taking another action.
-            </p>
+            <>
+              <p role="status">
+                The $50 bail exceeds available cash. Resolve this debt before taking another action.
+              </p>
+              {currentPlayer.getOutOfJailFreeCardCount > 0 && (
+                <button className="turn-action-button" onClick={onUseJailFreeCard} type="button">
+                  Use Get Out of Jail Free card
+                </button>
+              )}
+            </>
           ) : (
             <>
               <p>Choose a legal way to try to leave Jail:</p>
@@ -144,6 +156,15 @@ export default function TurnSummary({
                   <button className="turn-action-button" onClick={onPayJailBail} type="button">
                     Pay $50 bail
                   </button>
+                  {currentPlayer.getOutOfJailFreeCardCount > 0 && (
+                    <button
+                      className="turn-action-button"
+                      onClick={onUseJailFreeCard}
+                      type="button"
+                    >
+                      Use Get Out of Jail Free card
+                    </button>
+                  )}
                 </>
               )}
               {gameState.phase === 'resolving-turn' && (
