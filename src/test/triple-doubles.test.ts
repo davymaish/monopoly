@@ -24,7 +24,12 @@ describe('three-doubles Jail rule', () => {
 
     const completed = gameReducer(rolled, { type: 'move-player' })
 
-    expect(completed.players[0]).toMatchObject({ position: 10, cash: 1500 })
+    expect(completed.players[0]).toMatchObject({
+      position: 10,
+      cash: 1500,
+      isInJail: true,
+      jailTurns: 0,
+    })
     expect(completed).toMatchObject({
       doublesCount: 0,
       extraRollAvailable: false,

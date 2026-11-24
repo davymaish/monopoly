@@ -215,7 +215,9 @@ function applyJailTransition(
 
   return {
     players: players.map((player) =>
-      player.id === currentPlayer.id ? { ...player, position: jailSpace.position } : player,
+      player.id === currentPlayer.id
+        ? { ...player, position: jailSpace.position, isInJail: true, jailTurns: 0 }
+        : player,
     ),
     landingResolution: resolveLanding(
       jailSpace,
