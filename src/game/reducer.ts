@@ -231,7 +231,54 @@ function applyJailTransition(
 }
 
 export const gameReducer: GameReducer = (state, action) => {
+  if (state.debtResolution !== null) {
+    return state
+  }
+
   switch (action.type) {
+    case 'pay-jail-bail': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      if (state.phase !== 'awaiting-roll' || !currentPlayer?.isInJail) return state
+
+      if (currentPlayer.cash < 50) {
+        return {
+          ...state,
+          debtResolution: {
+            debtorId: currentPlayer.id,
+            creditorId: null,
+            amount: 50,
+            reason: 'jail-bail',
+          },
+          landingResolution: null,
+          phase: 'awaiting-player-action',
+        }
+      }
+
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? { ...player, cash: player.cash - 50, isInJail: false, jailTurns: 0 }
+            : player,
+        ),
+        dice: null,
+        doublesCount: 0,
+        extraRollAvailable: false,
+        jailAttemptInProgress: false,
+        landingResolution: null,
+        phase: 'awaiting-roll',
+        log: appendGameLog(state.log, [
+          {
+            type: 'payment',
+            payerId: currentPlayer.id,
+            payeeId: null,
+            amount: 50,
+            reason: 'jail-bail',
+          },
+          { type: 'released-from-jail', playerId: currentPlayer.id, method: 'bail' },
+        ]),
+      }
+    }
     case 'roll-dice':
       if (
         state.phase !== 'awaiting-roll' ||

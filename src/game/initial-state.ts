@@ -81,6 +81,7 @@ export function createInitialGameState(
     doublesCount: 0,
     extraRollAvailable: false,
     jailAttemptInProgress: false,
+    debtResolution: null,
     log: [],
     phase: 'awaiting-roll',
   }
