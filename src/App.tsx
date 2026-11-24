@@ -77,6 +77,13 @@ export default function App(): ReactElement {
     )
   }
 
+  function handleRollJailAttempt() {
+    const dice = rollDice()
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'roll-jail-attempt', dice }) : currentState,
+    )
+  }
+
   function handleMovePlayer() {
     setGameState((currentState) =>
       currentState ? gameReducer(currentState, { type: 'move-player' }) : currentState,
@@ -159,6 +166,7 @@ export default function App(): ReactElement {
             <TurnSummary
               gameState={gameState}
               onRollDice={handleRollDice}
+              onRollJailAttempt={handleRollJailAttempt}
               onMovePlayer={handleMovePlayer}
               onEndTurn={handleEndTurn}
               onDrawCard={handleDrawCard}

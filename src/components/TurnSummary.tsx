@@ -7,6 +7,7 @@ import RollDiceControl from './RollDiceControl'
 interface TurnSummaryProps {
   gameState: GameState
   onRollDice: () => void
+  onRollJailAttempt?: () => void
   onMovePlayer: () => void
   onEndTurn: () => void
   onDrawCard: (deck: CardDeck) => void
@@ -41,6 +42,8 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
         return `${getPlayerName(players, event.playerId)} was sent directly to Jail after rolling doubles three times.`
       }
       return `${getPlayerName(players, event.playerId)} was sent directly to Jail by a card.`
+    case 'released-from-jail':
+      return `${getPlayerName(players, event.playerId)} rolled doubles and was released from Jail.`
     case 'income':
       return event.reason === 'go-salary'
         ? `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} in GO salary.`
@@ -79,6 +82,7 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
 export default function TurnSummary({
   gameState,
   onRollDice,
+  onRollJailAttempt = () => {},
   onMovePlayer,
   onEndTurn,
   onDrawCard,
@@ -121,7 +125,21 @@ export default function TurnSummary({
               <li>Use a Get Out of Jail Free card.</li>
             )}
           </ul>
-          <p>Jail release controls will be available in the next rules updates.</p>
+          {gameState.phase === 'awaiting-roll' && (
+            <button className="turn-action-button" onClick={onRollJailAttempt} type="button">
+              Attempt to roll doubles
+            </button>
+          )}
+          {gameState.phase === 'resolving-turn' && (
+            <button className="turn-action-button" onClick={onMovePlayer} type="button">
+              Resolve Jail roll
+            </button>
+          )}
+          {gameState.phase === 'awaiting-player-action' &&
+            gameState.dice !== null &&
+            gameState.dice[0] !== gameState.dice[1] && (
+              <p role="status">No doubles; remain in Jail and end your turn.</p>
+            )}
         </section>
       ) : (
         <RollDiceControl onRollDice={onRollDice} phase={gameState.phase} />

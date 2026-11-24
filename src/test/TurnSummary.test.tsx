@@ -98,6 +98,7 @@ describe('TurnSummary', () => {
 
   it('shows legal Jail choices instead of ordinary roll and movement controls', () => {
     const initialState = createInitialGameState(setup)
+    const onRollJailAttempt = vi.fn()
     const gameState = {
       ...initialState,
       players: initialState.players.map((player, index) =>
@@ -112,6 +113,7 @@ describe('TurnSummary', () => {
       <TurnSummary
         gameState={gameState}
         onRollDice={() => {}}
+        onRollJailAttempt={onRollJailAttempt}
         onMovePlayer={() => {}}
         onEndTurn={() => {}}
         onDrawCard={() => {}}
@@ -123,6 +125,8 @@ describe('TurnSummary', () => {
     expect(jailChoices).toHaveTextContent('Attempt to roll doubles.')
     expect(jailChoices).toHaveTextContent('Pay $50 bail.')
     expect(jailChoices).toHaveTextContent('Use a Get Out of Jail Free card.')
+    fireEvent.click(screen.getByRole('button', { name: 'Attempt to roll doubles' }))
+    expect(onRollJailAttempt).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Roll dice' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Complete movement' })).not.toBeInTheDocument()
   })
