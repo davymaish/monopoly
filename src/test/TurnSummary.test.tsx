@@ -100,6 +100,7 @@ describe('TurnSummary', () => {
     const initialState = createInitialGameState(setup)
     const onRollJailAttempt = vi.fn()
     const onPayJailBail = vi.fn()
+    const onUseJailFreeCard = vi.fn()
     const gameState = {
       ...initialState,
       players: initialState.players.map((player, index) =>
@@ -116,6 +117,7 @@ describe('TurnSummary', () => {
         onRollDice={() => {}}
         onRollJailAttempt={onRollJailAttempt}
         onPayJailBail={onPayJailBail}
+        onUseJailFreeCard={onUseJailFreeCard}
         onMovePlayer={() => {}}
         onEndTurn={() => {}}
         onDrawCard={() => {}}
@@ -131,6 +133,8 @@ describe('TurnSummary', () => {
     expect(onRollJailAttempt).toHaveBeenCalledTimes(1)
     fireEvent.click(screen.getByRole('button', { name: 'Pay $50 bail' }))
     expect(onPayJailBail).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Use Get Out of Jail Free card' }))
+    expect(onUseJailFreeCard).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Roll dice' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Complete movement' })).not.toBeInTheDocument()
   })
@@ -140,7 +144,9 @@ describe('TurnSummary', () => {
     const gameState = {
       ...initialState,
       players: initialState.players.map((player, index) =>
-        index === 0 ? { ...player, position: 10, cash: 40, isInJail: true } : player,
+        index === 0
+          ? { ...player, position: 10, cash: 40, isInJail: true, getOutOfJailFreeCardCount: 1 }
+          : player,
       ),
       debtResolution: {
         debtorId: 'player-1',
@@ -150,11 +156,13 @@ describe('TurnSummary', () => {
       },
       phase: 'awaiting-player-action' as const,
     }
+    const onUseJailFreeCard = vi.fn()
 
     render(
       <TurnSummary
         gameState={gameState}
         onRollDice={() => {}}
+        onUseJailFreeCard={onUseJailFreeCard}
         onMovePlayer={() => {}}
         onEndTurn={() => {}}
         onDrawCard={() => {}}
@@ -165,6 +173,8 @@ describe('TurnSummary', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'The $50 bail exceeds available cash. Resolve this debt before taking another action.',
     )
+    fireEvent.click(screen.getByRole('button', { name: 'Use Get Out of Jail Free card' }))
+    expect(onUseJailFreeCard).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Pay $50 bail' })).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Attempt to roll doubles' }),

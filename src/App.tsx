@@ -90,6 +90,12 @@ export default function App(): ReactElement {
     )
   }
 
+  function handleUseJailFreeCard() {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'use-jail-free-card' }) : currentState,
+    )
+  }
+
   function handleMovePlayer() {
     setGameState((currentState) =>
       currentState ? gameReducer(currentState, { type: 'move-player' }) : currentState,
@@ -174,6 +180,7 @@ export default function App(): ReactElement {
               onRollDice={handleRollDice}
               onRollJailAttempt={handleRollJailAttempt}
               onPayJailBail={handlePayJailBail}
+              onUseJailFreeCard={handleUseJailFreeCard}
               onMovePlayer={handleMovePlayer}
               onEndTurn={handleEndTurn}
               onDrawCard={handleDrawCard}
