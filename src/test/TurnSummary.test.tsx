@@ -153,6 +153,7 @@ describe('TurnSummary', () => {
         creditorId: null,
         amount: 50,
         reason: 'jail-bail' as const,
+        resumeJailMovement: false,
       },
       phase: 'awaiting-player-action' as const,
     }

@@ -77,6 +77,7 @@ describe('Get Out of Jail Free card use', () => {
         creditorId: null,
         amount: 50,
         reason: 'jail-bail',
+        resumeJailMovement: false,
       },
       phase: 'awaiting-player-action',
     }

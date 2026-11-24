@@ -34,6 +34,7 @@ export interface DebtResolutionState {
   creditorId: PlayerId | null
   amount: number
   reason: 'jail-bail'
+  resumeJailMovement: boolean
 }
 
 export interface DrawnCard {

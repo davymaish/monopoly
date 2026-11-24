@@ -244,6 +244,8 @@ export const gameReducer: GameReducer = (state, action) => {
     case 'use-jail-free-card': {
       const currentPlayer = state.players[state.currentPlayerIndex]
       const isResolvingBailDebt = isJailBailDebtCardUse && state.phase === 'awaiting-player-action'
+      const resumeJailMovement =
+        isResolvingBailDebt && state.debtResolution?.resumeJailMovement === true
       const heldCardIndex = state.heldJailFreeCards.findIndex(
         (card) =>
           card.playerId === currentPlayer?.id &&
@@ -261,7 +263,7 @@ export const gameReducer: GameReducer = (state, action) => {
       }
 
       const deckKey = heldCard.deck === 'chance' ? 'chance' : 'communityChest'
-      return {
+      const releasedState: GameState = {
         ...state,
         players: state.players.map((player) =>
           player.id === currentPlayer.id
@@ -279,12 +281,12 @@ export const gameReducer: GameReducer = (state, action) => {
         },
         heldJailFreeCards: state.heldJailFreeCards.filter((_, index) => index !== heldCardIndex),
         debtResolution: null,
-        dice: null,
+        dice: resumeJailMovement ? state.dice : null,
         doublesCount: 0,
         extraRollAvailable: false,
         jailAttemptInProgress: false,
         landingResolution: null,
-        phase: 'awaiting-roll',
+        phase: resumeJailMovement ? 'resolving-turn' : 'awaiting-roll',
         log: appendGameLog(state.log, [
           {
             type: 'card-returned',
@@ -295,6 +297,9 @@ export const gameReducer: GameReducer = (state, action) => {
           { type: 'released-from-jail', playerId: currentPlayer.id, method: 'jail-free-card' },
         ]),
       }
+      return resumeJailMovement
+        ? gameReducer(releasedState, { type: 'move-player' })
+        : releasedState
     }
     case 'pay-jail-bail': {
       const currentPlayer = state.players[state.currentPlayerIndex]
@@ -308,6 +313,7 @@ export const gameReducer: GameReducer = (state, action) => {
             creditorId: null,
             amount: 50,
             reason: 'jail-bail',
+            resumeJailMovement: false,
           },
           landingResolution: null,
           phase: 'awaiting-player-action',
@@ -396,8 +402,58 @@ export const gameReducer: GameReducer = (state, action) => {
 
       if (currentPlayer.isInJail) {
         if (state.dice[0] !== state.dice[1]) {
+          const jailTurns = Math.min(3, currentPlayer.jailTurns + 1)
+          const failedAttemptPlayers = state.players.map((player) =>
+            player.id === currentPlayer.id ? { ...player, jailTurns } : player,
+          )
+
+          if (jailTurns === 3 && currentPlayer.cash < 50) {
+            return {
+              ...state,
+              players: failedAttemptPlayers,
+              debtResolution: {
+                debtorId: currentPlayer.id,
+                creditorId: null,
+                amount: 50,
+                reason: 'jail-bail',
+                resumeJailMovement: true,
+              },
+              extraRollAvailable: false,
+              jailAttemptInProgress: false,
+              landingResolution: null,
+              phase: 'awaiting-player-action',
+            }
+          }
+
+          if (jailTurns === 3) {
+            const forcedReleaseState: GameState = {
+              ...state,
+              players: state.players.map((player) =>
+                player.id === currentPlayer.id
+                  ? { ...player, cash: player.cash - 50, isInJail: false, jailTurns: 0 }
+                  : player,
+              ),
+              doublesCount: 0,
+              extraRollAvailable: false,
+              jailAttemptInProgress: false,
+              phase: 'resolving-turn',
+              log: appendGameLog(state.log, [
+                {
+                  type: 'payment',
+                  payerId: currentPlayer.id,
+                  payeeId: null,
+                  amount: 50,
+                  reason: 'jail-bail',
+                },
+                { type: 'released-from-jail', playerId: currentPlayer.id, method: 'bail' },
+              ]),
+            }
+            return gameReducer(forcedReleaseState, { type: 'move-player' })
+          }
+
           return {
             ...state,
+            players: failedAttemptPlayers,
             extraRollAvailable: false,
             jailAttemptInProgress: false,
             landingResolution: null,
