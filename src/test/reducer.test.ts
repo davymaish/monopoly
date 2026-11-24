@@ -376,7 +376,7 @@ describe('gameReducer skeleton', () => {
     ])
   })
 
-  it('keeps a jailed player in Jail after a non-double attempt and lets the turn end', () => {
+  it('increments the Jail turn after a non-double attempt and lets the turn end', () => {
     const initialState = createInitialGameState(setup)
     const jailedState: GameState = {
       ...initialState,
@@ -387,7 +387,7 @@ describe('gameReducer skeleton', () => {
     const attempt = gameReducer(jailedState, { type: 'roll-jail-attempt', dice: [2, 3] })
     const resolvedState = gameReducer(attempt, { type: 'move-player' })
 
-    expect(resolvedState.players[0]).toMatchObject({ position: 10, isInJail: true, jailTurns: 1 })
+    expect(resolvedState.players[0]).toMatchObject({ position: 10, isInJail: true, jailTurns: 2 })
     expect(resolvedState).toMatchObject({
       phase: 'awaiting-player-action',
       extraRollAvailable: false,
