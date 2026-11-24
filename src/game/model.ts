@@ -62,7 +62,11 @@ export type GameLogEvent =
   | { type: 'roll'; playerId: PlayerId; dice: DiceRoll }
   | { type: 'movement'; playerId: PlayerId; from: number; to: number; spacesMoved: number }
   | { type: 'sent-to-jail'; playerId: PlayerId; source: 'board' | 'card' | 'third-double' }
-  | { type: 'released-from-jail'; playerId: PlayerId; method: 'doubles' | 'bail' }
+  | {
+      type: 'released-from-jail'
+      playerId: PlayerId
+      method: 'doubles' | 'bail' | 'jail-free-card'
+    }
   | { type: 'income'; playerId: PlayerId; amount: number; reason: 'go-salary' | 'card' }
   | {
       type: 'payment'

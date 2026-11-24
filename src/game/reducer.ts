@@ -231,11 +231,71 @@ function applyJailTransition(
 }
 
 export const gameReducer: GameReducer = (state, action) => {
-  if (state.debtResolution !== null) {
+  const activePlayer = state.players[state.currentPlayerIndex]
+  const isJailBailDebtCardUse =
+    action.type === 'use-jail-free-card' &&
+    state.debtResolution?.reason === 'jail-bail' &&
+    state.debtResolution.debtorId === activePlayer?.id
+  if (state.debtResolution !== null && !isJailBailDebtCardUse) {
     return state
   }
 
   switch (action.type) {
+    case 'use-jail-free-card': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const isResolvingBailDebt = isJailBailDebtCardUse && state.phase === 'awaiting-player-action'
+      const heldCardIndex = state.heldJailFreeCards.findIndex(
+        (card) =>
+          card.playerId === currentPlayer?.id &&
+          getCardDefinition(card.deck, card.cardId)?.effect.type === 'get-out-of-jail-free',
+      )
+      const heldCard = state.heldJailFreeCards[heldCardIndex]
+
+      if (
+        !currentPlayer?.isInJail ||
+        currentPlayer.getOutOfJailFreeCardCount <= 0 ||
+        !heldCard ||
+        (state.phase !== 'awaiting-roll' && !isResolvingBailDebt)
+      ) {
+        return state
+      }
+
+      const deckKey = heldCard.deck === 'chance' ? 'chance' : 'communityChest'
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? {
+                ...player,
+                isInJail: false,
+                jailTurns: 0,
+                getOutOfJailFreeCardCount: player.getOutOfJailFreeCardCount - 1,
+              }
+            : player,
+        ),
+        decks: {
+          ...state.decks,
+          [deckKey]: [...state.decks[deckKey], heldCard.cardId],
+        },
+        heldJailFreeCards: state.heldJailFreeCards.filter((_, index) => index !== heldCardIndex),
+        debtResolution: null,
+        dice: null,
+        doublesCount: 0,
+        extraRollAvailable: false,
+        jailAttemptInProgress: false,
+        landingResolution: null,
+        phase: 'awaiting-roll',
+        log: appendGameLog(state.log, [
+          {
+            type: 'card-returned',
+            playerId: currentPlayer.id,
+            deck: heldCard.deck,
+            cardId: heldCard.cardId,
+          },
+          { type: 'released-from-jail', playerId: currentPlayer.id, method: 'jail-free-card' },
+        ]),
+      }
+    }
     case 'pay-jail-bail': {
       const currentPlayer = state.players[state.currentPlayerIndex]
       if (state.phase !== 'awaiting-roll' || !currentPlayer?.isInJail) return state

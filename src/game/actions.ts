@@ -5,6 +5,7 @@ export type GameAction =
   | { type: 'roll-dice'; dice: DiceRoll }
   | { type: 'roll-jail-attempt'; dice: DiceRoll }
   | { type: 'pay-jail-bail' }
+  | { type: 'use-jail-free-card' }
   | { type: 'move-player' }
   | { type: 'end-turn' }
   | { type: 'buy-property'; propertyId: string }
