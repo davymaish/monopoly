@@ -99,6 +99,7 @@ describe('TurnSummary', () => {
   it('shows legal Jail choices instead of ordinary roll and movement controls', () => {
     const initialState = createInitialGameState(setup)
     const onRollJailAttempt = vi.fn()
+    const onPayJailBail = vi.fn()
     const gameState = {
       ...initialState,
       players: initialState.players.map((player, index) =>
@@ -114,6 +115,7 @@ describe('TurnSummary', () => {
         gameState={gameState}
         onRollDice={() => {}}
         onRollJailAttempt={onRollJailAttempt}
+        onPayJailBail={onPayJailBail}
         onMovePlayer={() => {}}
         onEndTurn={() => {}}
         onDrawCard={() => {}}
@@ -127,7 +129,46 @@ describe('TurnSummary', () => {
     expect(jailChoices).toHaveTextContent('Use a Get Out of Jail Free card.')
     fireEvent.click(screen.getByRole('button', { name: 'Attempt to roll doubles' }))
     expect(onRollJailAttempt).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Pay $50 bail' }))
+    expect(onPayJailBail).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Roll dice' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Complete movement' })).not.toBeInTheDocument()
+  })
+
+  it('blocks turn controls while an unaffordable bail is pending debt resolution', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 10, cash: 40, isInJail: true } : player,
+      ),
+      debtResolution: {
+        debtorId: 'player-1',
+        creditorId: null,
+        amount: 50,
+        reason: 'jail-bail' as const,
+      },
+      phase: 'awaiting-player-action' as const,
+    }
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The $50 bail exceeds available cash. Resolve this debt before taking another action.',
+    )
+    expect(screen.queryByRole('button', { name: 'Pay $50 bail' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Attempt to roll doubles' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
   })
 })

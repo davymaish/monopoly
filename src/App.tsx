@@ -84,6 +84,12 @@ export default function App(): ReactElement {
     )
   }
 
+  function handlePayJailBail() {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'pay-jail-bail' }) : currentState,
+    )
+  }
+
   function handleMovePlayer() {
     setGameState((currentState) =>
       currentState ? gameReducer(currentState, { type: 'move-player' }) : currentState,
@@ -167,6 +173,7 @@ export default function App(): ReactElement {
               gameState={gameState}
               onRollDice={handleRollDice}
               onRollJailAttempt={handleRollJailAttempt}
+              onPayJailBail={handlePayJailBail}
               onMovePlayer={handleMovePlayer}
               onEndTurn={handleEndTurn}
               onDrawCard={handleDrawCard}

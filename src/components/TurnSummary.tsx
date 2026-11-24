@@ -8,6 +8,7 @@ interface TurnSummaryProps {
   gameState: GameState
   onRollDice: () => void
   onRollJailAttempt?: () => void
+  onPayJailBail?: () => void
   onMovePlayer: () => void
   onEndTurn: () => void
   onDrawCard: (deck: CardDeck) => void
@@ -43,7 +44,9 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
       }
       return `${getPlayerName(players, event.playerId)} was sent directly to Jail by a card.`
     case 'released-from-jail':
-      return `${getPlayerName(players, event.playerId)} rolled doubles and was released from Jail.`
+      return event.method === 'bail'
+        ? `${getPlayerName(players, event.playerId)} paid $50 bail and was released from Jail.`
+        : `${getPlayerName(players, event.playerId)} rolled doubles and was released from Jail.`
     case 'income':
       return event.reason === 'go-salary'
         ? `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} in GO salary.`
@@ -83,6 +86,7 @@ export default function TurnSummary({
   gameState,
   onRollDice,
   onRollJailAttempt = () => {},
+  onPayJailBail = () => {},
   onMovePlayer,
   onEndTurn,
   onDrawCard,
@@ -95,7 +99,8 @@ export default function TurnSummary({
     gameState.landingResolution?.type === 'unowned-property' ||
     gameState.landingResolution?.type === 'tax' ||
     gameState.landingResolution?.type === 'card' ||
-    gameState.pendingCard !== null
+    gameState.pendingCard !== null ||
+    gameState.debtResolution !== null
   const landingCardDeck =
     gameState.landingResolution?.type === 'card' ? gameState.landingResolution.deck : null
   const landingCardDeckName =
@@ -117,29 +122,42 @@ export default function TurnSummary({
       {currentPlayerInJail ? (
         <section className="turn-summary-status" aria-label="Jail turn choices">
           <h4>In Jail</h4>
-          <p>Choose a legal way to try to leave Jail:</p>
-          <ul>
-            <li>Attempt to roll doubles.</li>
-            {currentPlayer.cash >= 50 && <li>Pay $50 bail.</li>}
-            {currentPlayer.getOutOfJailFreeCardCount > 0 && (
-              <li>Use a Get Out of Jail Free card.</li>
-            )}
-          </ul>
-          {gameState.phase === 'awaiting-roll' && (
-            <button className="turn-action-button" onClick={onRollJailAttempt} type="button">
-              Attempt to roll doubles
-            </button>
+          {gameState.debtResolution ? (
+            <p role="status">
+              The $50 bail exceeds available cash. Resolve this debt before taking another action.
+            </p>
+          ) : (
+            <>
+              <p>Choose a legal way to try to leave Jail:</p>
+              <ul>
+                <li>Attempt to roll doubles.</li>
+                <li>Pay $50 bail.</li>
+                {currentPlayer.getOutOfJailFreeCardCount > 0 && (
+                  <li>Use a Get Out of Jail Free card.</li>
+                )}
+              </ul>
+              {gameState.phase === 'awaiting-roll' && (
+                <>
+                  <button className="turn-action-button" onClick={onRollJailAttempt} type="button">
+                    Attempt to roll doubles
+                  </button>
+                  <button className="turn-action-button" onClick={onPayJailBail} type="button">
+                    Pay $50 bail
+                  </button>
+                </>
+              )}
+              {gameState.phase === 'resolving-turn' && (
+                <button className="turn-action-button" onClick={onMovePlayer} type="button">
+                  Resolve Jail roll
+                </button>
+              )}
+              {gameState.phase === 'awaiting-player-action' &&
+                gameState.dice !== null &&
+                gameState.dice[0] !== gameState.dice[1] && (
+                  <p role="status">No doubles; remain in Jail and end your turn.</p>
+                )}
+            </>
           )}
-          {gameState.phase === 'resolving-turn' && (
-            <button className="turn-action-button" onClick={onMovePlayer} type="button">
-              Resolve Jail roll
-            </button>
-          )}
-          {gameState.phase === 'awaiting-player-action' &&
-            gameState.dice !== null &&
-            gameState.dice[0] !== gameState.dice[1] && (
-              <p role="status">No doubles; remain in Jail and end your turn.</p>
-            )}
         </section>
       ) : (
         <RollDiceControl onRollDice={onRollDice} phase={gameState.phase} />
@@ -193,6 +211,7 @@ export default function TurnSummary({
       )}
       {gameState.phase === 'awaiting-player-action' &&
         hasPendingPlayerAction &&
+        !gameState.debtResolution &&
         !gameState.pendingCard &&
         !landingCardDeck && (
           <p className="turn-summary-status">
