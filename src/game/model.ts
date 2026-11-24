@@ -15,6 +15,8 @@ export interface Player {
   color: PlayerColor
   cash: number
   position: number
+  isInJail: boolean
+  jailTurns: number
   getOutOfJailFreeCardCount: number
 }
 

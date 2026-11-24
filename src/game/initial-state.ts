@@ -56,6 +56,8 @@ export function createInitialGameState(
       color,
       cash: STARTING_CASH,
       position: goPosition,
+      isInJail: false,
+      jailTurns: 0,
       getOutOfJailFreeCardCount: 0,
     }
 
