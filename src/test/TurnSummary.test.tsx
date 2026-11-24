@@ -126,9 +126,10 @@ describe('TurnSummary', () => {
     )
 
     const jailChoices = screen.getByRole('region', { name: 'Jail turn choices' })
-    expect(jailChoices).toHaveTextContent('Attempt to roll doubles.')
-    expect(jailChoices).toHaveTextContent('Pay $50 bail.')
-    expect(jailChoices).toHaveTextContent('Use a Get Out of Jail Free card.')
+    expect(jailChoices).toHaveTextContent('Failed doubles attempts: 0 of 3.')
+    expect(jailChoices).toHaveTextContent(
+      'Choose how to leave Jail: attempt to roll doubles, pay $50 bail, or use a Get Out of Jail Free card.',
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Attempt to roll doubles' }))
     expect(onRollJailAttempt).toHaveBeenCalledTimes(1)
     fireEvent.click(screen.getByRole('button', { name: 'Pay $50 bail' }))
@@ -137,6 +138,63 @@ describe('TurnSummary', () => {
     expect(onUseJailFreeCard).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Roll dice' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Complete movement' })).not.toBeInTheDocument()
+  })
+
+  it('shows the final-attempt consequence and only the choices available to a jailed player', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 10, isInJail: true, jailTurns: 2 } : player,
+      ),
+      phase: 'awaiting-roll' as const,
+    }
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    expect(screen.getByText('Failed doubles attempts: 2 of 3.')).toBeInTheDocument()
+    expect(screen.getByText(/third and final doubles attempt/i)).toHaveTextContent(
+      'If you fail, pay $50 bail and move by this roll.',
+    )
+    expect(screen.getByRole('button', { name: 'Attempt to roll doubles' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pay $50 bail' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Use Get Out of Jail Free card' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('distinguishes Just Visiting from Jail status by using the jailed-state flag', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 10, isInJail: false, jailTurns: 2 } : player,
+      ),
+    }
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    expect(screen.queryByText('In Jail')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Failed doubles attempts:/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Roll dice' })).toBeInTheDocument()
   })
 
   it('blocks turn controls while an unaffordable bail is pending debt resolution', () => {
