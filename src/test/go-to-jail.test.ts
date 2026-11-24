@@ -42,7 +42,12 @@ describe('Go to Jail transitions', () => {
     const rolled = gameReducer(state, { type: 'roll-dice', dice: [1, 1] })
     const completed = gameReducer(rolled, { type: 'move-player' })
 
-    expect(completed.players[0]).toMatchObject({ position: 10, cash: 1300 })
+    expect(completed.players[0]).toMatchObject({
+      position: 10,
+      cash: 1300,
+      isInJail: true,
+      jailTurns: 0,
+    })
     expect(completed).toMatchObject({ doublesCount: 0, extraRollAvailable: false })
     expect(completed.landingResolution?.type).toBe('jail-visit')
     expect(completed.log.slice(-2).map(({ event }) => event)).toEqual([
@@ -69,7 +74,12 @@ describe('Go to Jail transitions', () => {
       const drawn = drawCard(state, deck, cardId)
       const completed = gameReducer(drawn, { type: 'complete-card' })
 
-      expect(completed.players[0]).toMatchObject({ position: 10, cash: 1300 })
+      expect(completed.players[0]).toMatchObject({
+        position: 10,
+        cash: 1300,
+        isInJail: true,
+        jailTurns: 0,
+      })
       expect(completed).toMatchObject({ doublesCount: 0, extraRollAvailable: false })
       expect(completed.landingResolution?.type).toBe('jail-visit')
       expect(completed.log.slice(-2).map(({ event }) => event)).toEqual([
