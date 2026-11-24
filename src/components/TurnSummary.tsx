@@ -86,6 +86,7 @@ export default function TurnSummary({
 }: TurnSummaryProps): ReactElement {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex]
   const recentEntries = gameState.log.slice(-5)
+  const currentPlayerInJail = currentPlayer?.isInJail === true
   const hasPendingPlayerAction =
     gameState.landingResolution?.type === 'unowned-property' ||
     gameState.landingResolution?.type === 'tax' ||
@@ -109,13 +110,28 @@ export default function TurnSummary({
       <p className="turn-summary-current">
         Current player: <strong>{currentPlayer?.name ?? 'Unknown player'}</strong>
       </p>
-      <RollDiceControl onRollDice={onRollDice} phase={gameState.phase} />
+      {currentPlayerInJail ? (
+        <section className="turn-summary-status" aria-label="Jail turn choices">
+          <h4>In Jail</h4>
+          <p>Choose a legal way to try to leave Jail:</p>
+          <ul>
+            <li>Attempt to roll doubles.</li>
+            {currentPlayer.cash >= 50 && <li>Pay $50 bail.</li>}
+            {currentPlayer.getOutOfJailFreeCardCount > 0 && (
+              <li>Use a Get Out of Jail Free card.</li>
+            )}
+          </ul>
+          <p>Jail release controls will be available in the next rules updates.</p>
+        </section>
+      ) : (
+        <RollDiceControl onRollDice={onRollDice} phase={gameState.phase} />
+      )}
       {gameState.phase === 'awaiting-player-action' && gameState.extraRollAvailable && (
         <p className="turn-summary-status" role="status">
           Doubles! Resolve this space, then roll again.
         </p>
       )}
-      {gameState.phase === 'resolving-turn' && (
+      {gameState.phase === 'resolving-turn' && !currentPlayerInJail && (
         <div className="turn-summary-actions">
           <button className="turn-action-button" onClick={onMovePlayer} type="button">
             Complete movement

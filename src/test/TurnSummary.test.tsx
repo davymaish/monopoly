@@ -95,4 +95,35 @@ describe('TurnSummary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Roll again' }))
     expect(onEndTurn).toHaveBeenCalledTimes(1)
   })
+
+  it('shows legal Jail choices instead of ordinary roll and movement controls', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0
+          ? { ...player, position: 10, isInJail: true, getOutOfJailFreeCardCount: 1 }
+          : player,
+      ),
+      phase: 'awaiting-roll' as const,
+    }
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    const jailChoices = screen.getByRole('region', { name: 'Jail turn choices' })
+    expect(jailChoices).toHaveTextContent('Attempt to roll doubles.')
+    expect(jailChoices).toHaveTextContent('Pay $50 bail.')
+    expect(jailChoices).toHaveTextContent('Use a Get Out of Jail Free card.')
+    expect(screen.queryByRole('button', { name: 'Roll dice' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Complete movement' })).not.toBeInTheDocument()
+  })
 })

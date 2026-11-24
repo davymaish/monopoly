@@ -233,7 +233,11 @@ function applyJailTransition(
 export const gameReducer: GameReducer = (state, action) => {
   switch (action.type) {
     case 'roll-dice':
-      if (state.phase !== 'awaiting-roll' || !state.players[state.currentPlayerIndex]) {
+      if (
+        state.phase !== 'awaiting-roll' ||
+        !state.players[state.currentPlayerIndex] ||
+        state.players[state.currentPlayerIndex]?.isInJail
+      ) {
         return state
       }
 
@@ -252,7 +256,12 @@ export const gameReducer: GameReducer = (state, action) => {
     case 'move-player': {
       const currentPlayer = state.players[state.currentPlayerIndex]
 
-      if (state.phase !== 'resolving-turn' || state.dice === null || !currentPlayer) {
+      if (
+        state.phase !== 'resolving-turn' ||
+        state.dice === null ||
+        !currentPlayer ||
+        currentPlayer.isInJail
+      ) {
         return state
       }
 

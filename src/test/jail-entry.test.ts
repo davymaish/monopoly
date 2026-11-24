@@ -26,4 +26,22 @@ describe('explicit Jail status', () => {
     expect(completed.players[0]).toMatchObject({ position: 10, isInJail: false, jailTurns: 0 })
     expect(completed.landingResolution?.type).toBe('jail-visit')
   })
+
+  it('blocks ordinary roll and movement actions while jailed', () => {
+    const initialState = createInitialGameState(setup, () => 0)
+    const jailedState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, position: 10, isInJail: true } : player,
+      ),
+    }
+    const resolvingState = {
+      ...jailedState,
+      dice: [2, 2] as const,
+      phase: 'resolving-turn' as const,
+    }
+
+    expect(gameReducer(jailedState, { type: 'roll-dice', dice: [1, 2] })).toBe(jailedState)
+    expect(gameReducer(resolvingState, { type: 'move-player' })).toBe(resolvingState)
+  })
 })
