@@ -12,11 +12,13 @@ import PlayerNameFields, { normalizePlayerNames } from './components/PlayerNameF
 import PlayerColorSelector, { PLAYER_TOKEN_COLORS } from './components/PlayerColorSelector'
 import type { PlayerColor } from './components/PlayerColorSelector'
 import PlayerPanel from './components/PlayerPanel'
+import PropertyManagementPanel from './components/PropertyManagementPanel'
 import TurnSummary from './components/TurnSummary'
 import { validateSetup } from './setup/validation'
 import { createInitialGameState, type InitialGameState } from './game/initial-state'
 import { rollDice } from './game/dice'
 import { gameReducer } from './game/reducer'
+import type { GameAction } from './game/actions'
 import type { TaxPaymentChoice } from './game/model'
 import type { CardDeck } from './game/cards'
 
@@ -114,6 +116,12 @@ export default function App(): ReactElement {
     )
   }
 
+  function handlePropertyAction(action: GameAction) {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, action) : currentState,
+    )
+  }
+
   function handleDeclinePurchase(propertyId: string) {
     setGameState((currentState) =>
       currentState
@@ -175,6 +183,7 @@ export default function App(): ReactElement {
           <section className="game-screen" aria-labelledby="game-screen-heading">
             <h2 id="game-screen-heading">Game board</h2>
             <PlayerPanel gameState={gameState} />
+            <PropertyManagementPanel gameState={gameState} onAction={handlePropertyAction} />
             <TurnSummary
               gameState={gameState}
               onRollDice={handleRollDice}

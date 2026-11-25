@@ -1016,6 +1016,85 @@ body {
   text-align: right;
 }
 
+.property-management-panel {
+  width: min(100%, 58rem);
+  margin: 0 auto var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.property-management-panel h2 {
+  margin: 0 0 var(--space-2);
+  color: var(--color-brand);
+  font-size: var(--font-size-subtitle);
+}
+
+.property-management-current-player,
+.property-management-empty {
+  margin: 0 0 var(--space-3);
+  color: var(--color-muted);
+}
+
+.property-management-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.property-management-card {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-page);
+}
+
+.property-management-details h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-body);
+}
+
+.property-management-details p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-muted);
+}
+
+.property-management-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.property-management-button {
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: var(--color-control-background);
+  color: var(--color-control-text);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.property-management-button--secondary {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
