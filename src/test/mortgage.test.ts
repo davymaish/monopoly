@@ -83,6 +83,80 @@ describe('property mortgages', () => {
     expect(gameReducer(wrongPhase, action)).toBe(wrongPhase)
   })
 
+  it.each([
+    ['mediterranean-avenue', 33],
+    ['reading-railroad', 110],
+    ['electric-company', 83],
+  ] as const)('redeems %s for principal plus 10% interest', (propertyId, amount) => {
+    const state = {
+      ...createState({ [propertyId]: 'player-1' }),
+      mortgagedProperties: [propertyId],
+    }
+    const redeemed = gameReducer(state, { type: 'unmortgage-property', propertyId })
+
+    expect(redeemed.players[0]?.cash).toBe(1500 - amount)
+    expect(redeemed.mortgagedProperties).not.toContain(propertyId)
+    expect(redeemed.log.at(-1)?.event).toEqual({
+      type: 'payment',
+      payerId: 'player-1',
+      payeeId: null,
+      amount,
+      reason: 'unmortgage',
+    })
+  })
+
+  it('rejects unowned, opponent-owned, unmortgaged, unaffordable, and out-of-phase requests', () => {
+    const unowned = { ...createState(), mortgagedProperties: ['mediterranean-avenue'] }
+    const opponentOwned = {
+      ...createState({ 'mediterranean-avenue': 'player-2' }),
+      mortgagedProperties: ['mediterranean-avenue'],
+    }
+    const notMortgaged = createState({ 'mediterranean-avenue': 'player-1' })
+    const unaffordable = {
+      ...createState({ 'electric-company': 'player-1' }),
+      players: createState().players.map((player, index) =>
+        index === 0 ? { ...player, cash: 82 } : player,
+      ),
+      mortgagedProperties: ['electric-company'],
+    }
+    const wrongPhase = {
+      ...createState({ 'mediterranean-avenue': 'player-1' }),
+      mortgagedProperties: ['mediterranean-avenue'],
+      phase: 'auction' as const,
+    }
+
+    expect(
+      gameReducer(unowned, {
+        type: 'unmortgage-property',
+        propertyId: 'mediterranean-avenue',
+      }),
+    ).toBe(unowned)
+    expect(
+      gameReducer(opponentOwned, {
+        type: 'unmortgage-property',
+        propertyId: 'mediterranean-avenue',
+      }),
+    ).toBe(opponentOwned)
+    expect(
+      gameReducer(notMortgaged, {
+        type: 'unmortgage-property',
+        propertyId: 'mediterranean-avenue',
+      }),
+    ).toBe(notMortgaged)
+    expect(
+      gameReducer(unaffordable, {
+        type: 'unmortgage-property',
+        propertyId: 'electric-company',
+      }),
+    ).toBe(unaffordable)
+    expect(
+      gameReducer(wrongPhase, {
+        type: 'unmortgage-property',
+        propertyId: 'mediterranean-avenue',
+      }),
+    ).toBe(wrongPhase)
+  })
+
   it('does not charge rent when another player lands on the mortgaged street', () => {
     const state = createState({ 'vermont-avenue': 'player-1' })
     const mortgaged = gameReducer(state, {
