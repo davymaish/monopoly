@@ -73,6 +73,7 @@ describe('gameReducer skeleton', () => {
       { type: 'end-turn' },
       { type: 'build-house', propertyId: 'mediterranean-avenue' },
       { type: 'build-hotel', propertyId: 'mediterranean-avenue' },
+      { type: 'sell-building', propertyId: 'mediterranean-avenue' },
       { type: 'buy-property', propertyId: 'mediterranean-avenue' },
       { type: 'decline-purchase', propertyId: 'mediterranean-avenue' },
     ]
