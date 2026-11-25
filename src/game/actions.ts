@@ -10,6 +10,7 @@ export type GameAction =
   | { type: 'end-turn' }
   | { type: 'buy-property'; propertyId: string }
   | { type: 'mortgage-property'; propertyId: string }
+  | { type: 'unmortgage-property'; propertyId: string }
   | { type: 'build-house'; propertyId: string }
   | { type: 'build-hotel'; propertyId: string }
   | { type: 'sell-building'; propertyId: string }
