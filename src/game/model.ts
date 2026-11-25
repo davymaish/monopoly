@@ -68,7 +68,12 @@ export type GameLogEvent =
       playerId: PlayerId
       method: 'doubles' | 'bail' | 'jail-free-card'
     }
-  | { type: 'income'; playerId: PlayerId; amount: number; reason: 'go-salary' | 'card' }
+  | {
+      type: 'income'
+      playerId: PlayerId
+      amount: number
+      reason: 'go-salary' | 'card' | 'building-sale'
+    }
   | {
       type: 'payment'
       payerId: PlayerId

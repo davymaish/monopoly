@@ -10,6 +10,7 @@ export type BuildingEligibilityReason =
   | 'mortgaged-group'
   | 'uneven-group-development'
   | 'hotel-not-ready'
+  | 'no-buildings'
 
 export interface BuildingEligibility {
   eligible: boolean
@@ -35,6 +36,12 @@ function getStreet(propertyId: string): PropertySpace | undefined {
   return BOARD_SPACES.find(
     (space): space is PropertySpace => space.id === propertyId && space.kind === 'property',
   )
+}
+
+function getDevelopmentLevel(buildings: PropertyBuildings[string] | undefined): number {
+  if (buildings?.hotels === 1 && buildings.houses === 0) return 5
+  if (buildings?.hotels === 0 && buildings.houses <= 4) return buildings.houses
+  return -1
 }
 
 export function getBuildingEligibility({
@@ -117,18 +124,53 @@ export function getHotelBuildingEligibility({
   }
 
   const groupProperties = getPropertiesInGroup(BOARD_SPACES, property.group)
-  const developmentLevels = groupProperties.map(({ id }) => {
-    const buildings = propertyBuildings[id]
-    if (buildings?.hotels === 1 && buildings.houses === 0) return 5
-    if (buildings?.hotels === 0 && buildings.houses <= 4) return buildings.houses
-    return 0
-  })
+  const developmentLevels = groupProperties.map(({ id }) =>
+    getDevelopmentLevel(propertyBuildings[id]),
+  )
 
   if (
     developmentLevels.some((level) => level < 4) ||
     Math.max(...developmentLevels) - Math.min(...developmentLevels) > 1
   ) {
     return blocked('hotel-not-ready')
+  }
+
+  return { eligible: true, reason: null }
+}
+
+export function getBuildingSaleEligibility({
+  playerId,
+  propertyId,
+  ownership,
+  mortgagedProperties,
+  propertyBuildings,
+}: HouseBuildingEligibilityInput): BuildingEligibility {
+  const groupEligibility = getBuildingEligibility({
+    playerId,
+    propertyId,
+    ownership,
+    mortgagedProperties,
+  })
+  if (!groupEligibility.eligible) return groupEligibility
+
+  const property = getStreet(propertyId)
+  const targetBuildings = propertyBuildings[propertyId]
+  if (!property || !targetBuildings) return blocked('no-buildings')
+
+  const targetLevel = getDevelopmentLevel(targetBuildings)
+  if (targetLevel <= 0) return blocked('no-buildings')
+
+  const groupProperties = getPropertiesInGroup(BOARD_SPACES, property.group)
+  const projectedLevels = groupProperties.map(({ id }) => {
+    const level = getDevelopmentLevel(propertyBuildings[id])
+    return id === propertyId ? level - 1 : level
+  })
+
+  if (
+    projectedLevels.some((level) => level < 0) ||
+    Math.max(...projectedLevels) - Math.min(...projectedLevels) > 1
+  ) {
+    return blocked('uneven-group-development')
   }
 
   return { eligible: true, reason: null }
