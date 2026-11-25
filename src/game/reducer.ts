@@ -2,6 +2,8 @@ import type { GameReducer } from './actions'
 import { BOARD_SPACES } from './board'
 import type { BoardSpace } from './board-space'
 import {
+  TOTAL_HOTEL_SUPPLY,
+  TOTAL_HOUSE_SUPPLY,
   getBuildingSaleEligibility,
   getHouseBuildingEligibility,
   getHotelBuildingEligibility,
@@ -17,9 +19,6 @@ import { calculateTaxAmount } from './tax'
 import { UTILITIES } from './utility-data'
 import { getCardDefinition } from './cards'
 import { STREET_PROPERTIES } from './street-data'
-
-const TOTAL_HOUSE_SUPPLY = 32
-const TOTAL_HOTEL_SUPPLY = 12
 
 function finishAuction(state: GameState, auction: AuctionState): GameState {
   const winner = auction.highBidderId

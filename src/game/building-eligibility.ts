@@ -3,6 +3,9 @@ import type { PropertySpace } from './board-space'
 import { getPropertiesInGroup, PROPERTY_GROUPS } from './property-groups'
 import type { PlayerId, PropertyBuildings, PropertyOwnership } from './model'
 
+export const TOTAL_HOUSE_SUPPLY = 32
+export const TOTAL_HOTEL_SUPPLY = 12
+
 export type BuildingEligibilityReason =
   | 'not-a-street'
   | 'not-owner'
