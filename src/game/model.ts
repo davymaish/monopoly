@@ -74,7 +74,14 @@ export type GameLogEvent =
       payerId: PlayerId
       payeeId: PlayerId | null
       amount: number
-      reason: 'rent' | 'tax' | 'property-purchase' | 'house-purchase' | 'card' | 'jail-bail'
+      reason:
+        | 'rent'
+        | 'tax'
+        | 'property-purchase'
+        | 'house-purchase'
+        | 'hotel-purchase'
+        | 'card'
+        | 'jail-bail'
     }
   | {
       type: 'rent-skipped'

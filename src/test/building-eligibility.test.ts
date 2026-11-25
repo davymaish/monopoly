@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getBuildingEligibility } from '../game/building-eligibility'
+import { getBuildingEligibility, getHotelBuildingEligibility } from '../game/building-eligibility'
 import { createInitialGameState } from '../game/initial-state'
 
 const setup = {
@@ -79,6 +79,47 @@ describe('building eligibility', () => {
       eligible: false,
       reason: 'not-a-street',
     })
+  })
+
+  it('allows hotel upgrades from four houses when every group property is at four or hotel level', () => {
+    const state = createInitialGameState(setup, () => 0)
+    const ownership = {
+      ...state.ownership,
+      'mediterranean-avenue': 'player-1',
+      'baltic-avenue': 'player-1',
+    }
+    const propertyBuildings = {
+      ...state.propertyBuildings,
+      'mediterranean-avenue': { houses: 4, hotels: 0 },
+      'baltic-avenue': { houses: 4, hotels: 0 },
+    }
+    const input = {
+      playerId: 'player-1',
+      propertyId: 'mediterranean-avenue',
+      ownership,
+      mortgagedProperties: [],
+      propertyBuildings,
+    }
+
+    expect(getHotelBuildingEligibility(input)).toEqual({ eligible: true, reason: null })
+    expect(
+      getHotelBuildingEligibility({
+        ...input,
+        propertyBuildings: {
+          ...propertyBuildings,
+          'baltic-avenue': { houses: 0, hotels: 1 },
+        },
+      }),
+    ).toEqual({ eligible: true, reason: null })
+    expect(
+      getHotelBuildingEligibility({
+        ...input,
+        propertyBuildings: {
+          ...propertyBuildings,
+          'baltic-avenue': { houses: 3, hotels: 0 },
+        },
+      }),
+    ).toEqual({ eligible: false, reason: 'hotel-not-ready' })
   })
 
   it('ignores a mortgage outside the target color group', () => {
