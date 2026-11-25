@@ -83,6 +83,7 @@ export type GameLogEvent =
         | 'rent'
         | 'tax'
         | 'property-purchase'
+        | 'unmortgage'
         | 'house-purchase'
         | 'hotel-purchase'
         | 'card'

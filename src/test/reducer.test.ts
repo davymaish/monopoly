@@ -72,6 +72,7 @@ describe('gameReducer skeleton', () => {
     const actions: GameAction[] = [
       { type: 'end-turn' },
       { type: 'mortgage-property', propertyId: 'mediterranean-avenue' },
+      { type: 'unmortgage-property', propertyId: 'mediterranean-avenue' },
       { type: 'build-house', propertyId: 'mediterranean-avenue' },
       { type: 'build-hotel', propertyId: 'mediterranean-avenue' },
       { type: 'sell-building', propertyId: 'mediterranean-avenue' },

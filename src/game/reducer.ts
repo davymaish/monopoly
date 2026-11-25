@@ -1143,6 +1143,44 @@ export const gameReducer: GameReducer = (state, action) => {
         ]),
       }
     }
+    case 'unmortgage-property': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const deed = getPurchasableDeedById(action.propertyId)
+      const redemptionAmount = deed ? deed.mortgageValue + Math.ceil(deed.mortgageValue / 10) : 0
+
+      if (
+        (state.phase !== 'awaiting-roll' && state.phase !== 'awaiting-player-action') ||
+        state.pendingCard !== null ||
+        !currentPlayer ||
+        !deed ||
+        state.ownership[action.propertyId] !== currentPlayer.id ||
+        !state.mortgagedProperties.includes(action.propertyId) ||
+        currentPlayer.cash < redemptionAmount
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? { ...player, cash: player.cash - redemptionAmount }
+            : player,
+        ),
+        mortgagedProperties: state.mortgagedProperties.filter(
+          (propertyId) => propertyId !== action.propertyId,
+        ),
+        log: appendGameLog(state.log, [
+          {
+            type: 'payment',
+            payerId: currentPlayer.id,
+            payeeId: null,
+            amount: redemptionAmount,
+            reason: 'unmortgage',
+          },
+        ]),
+      }
+    }
     case 'buy-property': {
       const resolution = state.landingResolution
       const currentPlayer = state.players[state.currentPlayerIndex]
