@@ -1,7 +1,7 @@
 import type { GameReducer } from './actions'
 import { BOARD_SPACES } from './board'
 import type { BoardSpace } from './board-space'
-import { getHouseBuildingEligibility } from './building-eligibility'
+import { getHouseBuildingEligibility, getHotelBuildingEligibility } from './building-eligibility'
 import { resolveLanding } from './landing'
 import { appendGameLog } from './log'
 import type { AuctionState, GameLogEvent, GameState, Player, PlayerId } from './model'
@@ -15,6 +15,7 @@ import { getCardDefinition } from './cards'
 import { STREET_PROPERTIES } from './street-data'
 
 const TOTAL_HOUSE_SUPPLY = 32
+const TOTAL_HOTEL_SUPPLY = 12
 
 function finishAuction(state: GameState, auction: AuctionState): GameState {
   const winner = auction.highBidderId
@@ -992,6 +993,56 @@ export const gameReducer: GameReducer = (state, action) => {
             payeeId: null,
             amount: property.houseCost,
             reason: 'house-purchase',
+          },
+        ]),
+      }
+    }
+    case 'build-hotel': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const property = STREET_PROPERTIES.find((street) => street.id === action.propertyId)
+      const buildings = state.propertyBuildings[action.propertyId]
+      const hotelsInUse = Object.values(state.propertyBuildings).reduce(
+        (total, propertyBuildings) => total + propertyBuildings.hotels,
+        0,
+      )
+
+      if (
+        (state.phase !== 'awaiting-roll' && state.phase !== 'awaiting-player-action') ||
+        state.pendingCard !== null ||
+        !currentPlayer ||
+        !property ||
+        !buildings ||
+        hotelsInUse >= TOTAL_HOTEL_SUPPLY ||
+        currentPlayer.cash < property.houseCost ||
+        !getHotelBuildingEligibility({
+          playerId: currentPlayer.id,
+          propertyId: action.propertyId,
+          ownership: state.ownership,
+          mortgagedProperties: state.mortgagedProperties,
+          propertyBuildings: state.propertyBuildings,
+        }).eligible
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? { ...player, cash: player.cash - property.houseCost }
+            : player,
+        ),
+        propertyBuildings: {
+          ...state.propertyBuildings,
+          [action.propertyId]: { houses: 0, hotels: 1 },
+        },
+        log: appendGameLog(state.log, [
+          {
+            type: 'payment',
+            payerId: currentPlayer.id,
+            payeeId: null,
+            amount: property.houseCost,
+            reason: 'hotel-purchase',
           },
         ]),
       }

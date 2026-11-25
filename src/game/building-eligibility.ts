@@ -4,7 +4,12 @@ import { getPropertiesInGroup, PROPERTY_GROUPS } from './property-groups'
 import type { PlayerId, PropertyBuildings, PropertyOwnership } from './model'
 
 export type BuildingEligibilityReason =
-  'not-a-street' | 'not-owner' | 'incomplete-group' | 'mortgaged-group' | 'uneven-group-development'
+  | 'not-a-street'
+  | 'not-owner'
+  | 'incomplete-group'
+  | 'mortgaged-group'
+  | 'uneven-group-development'
+  | 'hotel-not-ready'
 
 export interface BuildingEligibility {
   eligible: boolean
@@ -88,4 +93,43 @@ export function getHouseBuildingEligibility({
   return highestProjectedCount - lowestProjectedCount > 1
     ? blocked('uneven-group-development')
     : { eligible: true, reason: null }
+}
+
+export function getHotelBuildingEligibility({
+  playerId,
+  propertyId,
+  ownership,
+  mortgagedProperties,
+  propertyBuildings,
+}: HouseBuildingEligibilityInput): BuildingEligibility {
+  const groupEligibility = getBuildingEligibility({
+    playerId,
+    propertyId,
+    ownership,
+    mortgagedProperties,
+  })
+  if (!groupEligibility.eligible) return groupEligibility
+
+  const property = getStreet(propertyId)
+  const targetBuildings = propertyBuildings[propertyId]
+  if (!property || targetBuildings?.houses !== 4 || targetBuildings.hotels !== 0) {
+    return blocked('hotel-not-ready')
+  }
+
+  const groupProperties = getPropertiesInGroup(BOARD_SPACES, property.group)
+  const developmentLevels = groupProperties.map(({ id }) => {
+    const buildings = propertyBuildings[id]
+    if (buildings?.hotels === 1 && buildings.houses === 0) return 5
+    if (buildings?.hotels === 0 && buildings.houses <= 4) return buildings.houses
+    return 0
+  })
+
+  if (
+    developmentLevels.some((level) => level < 4) ||
+    Math.max(...developmentLevels) - Math.min(...developmentLevels) > 1
+  ) {
+    return blocked('hotel-not-ready')
+  }
+
+  return { eligible: true, reason: null }
 }
