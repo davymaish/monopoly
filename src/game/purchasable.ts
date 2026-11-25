@@ -7,7 +7,7 @@ import type { UtilityProperty } from './utility-data'
 
 export type PurchasableDeed = Pick<
   StreetProperty | RailroadProperty | UtilityProperty,
-  'id' | 'name' | 'purchasePrice'
+  'id' | 'name' | 'purchasePrice' | 'mortgageValue'
 >
 
 const PURCHASABLE_DEEDS: readonly PurchasableDeed[] = [

@@ -72,7 +72,7 @@ export type GameLogEvent =
       type: 'income'
       playerId: PlayerId
       amount: number
-      reason: 'go-salary' | 'card' | 'building-sale'
+      reason: 'go-salary' | 'card' | 'building-sale' | 'mortgage'
     }
   | {
       type: 'payment'
