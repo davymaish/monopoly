@@ -12,6 +12,7 @@ describe('game action contract', () => {
       | { type: 'move-player' }
       | { type: 'end-turn' }
       | { type: 'buy-property'; propertyId: string }
+      | { type: 'build-house'; propertyId: string }
       | { type: 'decline-purchase'; propertyId: string }
       | { type: 'auction-bid'; amount: number }
       | { type: 'auction-pass' }

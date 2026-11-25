@@ -1,4 +1,4 @@
-import type { PropertyOwnership } from './model'
+import type { PropertyBuildings, PropertyOwnership } from './model'
 import { RAILROADS } from './railroad-data'
 import { STREET_PROPERTIES } from './street-data'
 import { calculateUtilityRent as calculateRentFromUtilityCount, UTILITIES } from './utility-data'
@@ -45,13 +45,22 @@ export function calculateRailroadRent(
   return rent ? rent * rentMultiplier : 0
 }
 
-export function calculateStreetRent(propertyId: string, ownership: PropertyOwnership): number {
+export function calculateStreetRent(
+  propertyId: string,
+  ownership: PropertyOwnership,
+  propertyBuildings: PropertyBuildings = {},
+): number {
   const property = STREET_PROPERTIES.find((street) => street.id === propertyId)
   const ownerId = ownership[propertyId]
 
   if (!property || !ownerId) {
     return 0
   }
+
+  const buildings = propertyBuildings[propertyId]
+  if (buildings?.hotels) return property.rents.hotel
+  const houseRent = buildings?.houses ? property.rents.houses[buildings.houses - 1] : undefined
+  if (houseRent !== undefined) return houseRent
 
   const groupProperties = STREET_PROPERTIES.filter((street) => street.group === property.group)
   const ownerHasCompleteGroup = groupProperties.every((street) => ownership[street.id] === ownerId)
