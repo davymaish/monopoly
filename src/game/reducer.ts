@@ -1102,6 +1102,47 @@ export const gameReducer: GameReducer = (state, action) => {
         ]),
       }
     }
+    case 'mortgage-property': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const deed = getPurchasableDeedById(action.propertyId)
+      const street = STREET_PROPERTIES.find((property) => property.id === action.propertyId)
+      const groupHasBuildings =
+        street !== undefined &&
+        STREET_PROPERTIES.some((property) => {
+          const buildings = state.propertyBuildings[property.id]
+          return property.group === street.group && (buildings.houses > 0 || buildings.hotels > 0)
+        })
+
+      if (
+        (state.phase !== 'awaiting-roll' && state.phase !== 'awaiting-player-action') ||
+        state.pendingCard !== null ||
+        !currentPlayer ||
+        !deed ||
+        state.ownership[action.propertyId] !== currentPlayer.id ||
+        state.mortgagedProperties.includes(action.propertyId) ||
+        groupHasBuildings
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? { ...player, cash: player.cash + deed.mortgageValue }
+            : player,
+        ),
+        mortgagedProperties: [...state.mortgagedProperties, action.propertyId],
+        log: appendGameLog(state.log, [
+          {
+            type: 'income',
+            playerId: currentPlayer.id,
+            amount: deed.mortgageValue,
+            reason: 'mortgage',
+          },
+        ]),
+      }
+    }
     case 'buy-property': {
       const resolution = state.landingResolution
       const currentPlayer = state.players[state.currentPlayerIndex]
