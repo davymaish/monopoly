@@ -21,6 +21,35 @@ function createBrownGroupState(): GameState {
   }
 }
 
+function createDevelopedSupplyState(orangeHouses: readonly [number, number, number]): GameState {
+  const state = createBrownGroupState()
+  const ownership = { ...state.ownership }
+  const propertyBuildings = { ...state.propertyBuildings }
+  const groups: { ids: string[]; houses: readonly number[] }[] = [
+    {
+      ids: ['oriental-avenue', 'vermont-avenue', 'connecticut-avenue'],
+      houses: [4, 4, 4],
+    },
+    {
+      ids: ['st-charles-place', 'states-avenue', 'virginia-avenue'],
+      houses: [4, 4, 4],
+    },
+    {
+      ids: ['st-james-place', 'tennessee-avenue', 'new-york-avenue'],
+      houses: orangeHouses,
+    },
+  ]
+
+  for (const group of groups) {
+    for (const [index, id] of group.ids.entries()) {
+      ownership[id] = 'player-2'
+      propertyBuildings[id] = { houses: group.houses[index] ?? 0, hotels: 0 }
+    }
+  }
+
+  return { ...state, ownership, propertyBuildings }
+}
+
 describe('house purchase', () => {
   it('deducts the house cost, adds one house, and logs payment', () => {
     const state = createBrownGroupState()
@@ -37,6 +66,33 @@ describe('house purchase', () => {
     })
     expect(state.players[0]?.cash).toBe(1500)
     expect(state.propertyBuildings['baltic-avenue']).toEqual({ houses: 0, hotels: 0 })
+  })
+
+  it('allows the final bank house but refuses construction when all 32 are in use', () => {
+    const lastHouseAvailable = createDevelopedSupplyState([3, 2, 2])
+    const finalHouse = gameReducer(lastHouseAvailable, {
+      type: 'build-house',
+      propertyId: 'baltic-avenue',
+    })
+
+    expect(
+      Object.values(lastHouseAvailable.propertyBuildings).reduce(
+        (total, buildings) => total + buildings.houses,
+        0,
+      ),
+    ).toBe(31)
+    expect(
+      Object.values(finalHouse.propertyBuildings).reduce(
+        (total, buildings) => total + buildings.houses,
+        0,
+      ),
+    ).toBe(32)
+    expect(finalHouse.propertyBuildings['baltic-avenue']?.houses).toBe(1)
+
+    const exhaustedSupply = createDevelopedSupplyState([3, 3, 2])
+    expect(gameReducer(exhaustedSupply, { type: 'build-house', propertyId: 'baltic-avenue' })).toBe(
+      exhaustedSupply,
+    )
   })
 
   it('rejects an incomplete group and a property the current player does not own', () => {
