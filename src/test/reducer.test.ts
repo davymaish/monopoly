@@ -71,6 +71,7 @@ describe('gameReducer skeleton', () => {
     const initialSnapshot = JSON.stringify(state)
     const actions: GameAction[] = [
       { type: 'end-turn' },
+      { type: 'build-house', propertyId: 'mediterranean-avenue' },
       { type: 'buy-property', propertyId: 'mediterranean-avenue' },
       { type: 'decline-purchase', propertyId: 'mediterranean-avenue' },
     ]

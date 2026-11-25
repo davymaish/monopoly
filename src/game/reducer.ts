@@ -1,6 +1,7 @@
 import type { GameReducer } from './actions'
 import { BOARD_SPACES } from './board'
 import type { BoardSpace } from './board-space'
+import { getHouseBuildingEligibility } from './building-eligibility'
 import { resolveLanding } from './landing'
 import { appendGameLog } from './log'
 import type { AuctionState, GameLogEvent, GameState, Player, PlayerId } from './model'
@@ -11,6 +12,7 @@ import { calculateRailroadRent, calculateStreetRent, calculateUtilityPropertyRen
 import { calculateTaxAmount } from './tax'
 import { UTILITIES } from './utility-data'
 import { getCardDefinition } from './cards'
+import { STREET_PROPERTIES } from './street-data'
 
 function finishAuction(state: GameState, auction: AuctionState): GameState {
   const winner = auction.highBidderId
@@ -134,7 +136,7 @@ function resolveCardMovement(
       : null
   const rentAmount =
     rentOwnerId && destination.kind === 'property'
-      ? calculateStreetRent(destination.id, state.ownership)
+      ? calculateStreetRent(destination.id, state.ownership, state.propertyBuildings)
       : rentOwnerId && destination.kind === 'railroad'
         ? calculateRailroadRent(
             destination.id,
@@ -512,7 +514,7 @@ export const gameReducer: GameReducer = (state, action) => {
           : null
       const rentAmount =
         rentOwnerId && landingSpace?.kind === 'property'
-          ? calculateStreetRent(landingSpace.id, state.ownership)
+          ? calculateStreetRent(landingSpace.id, state.ownership, state.propertyBuildings)
           : rentOwnerId && landingSpace?.kind === 'railroad'
             ? calculateRailroadRent(landingSpace.id, state.ownership)
             : rentOwnerId && landingSpace?.kind === 'utility'
@@ -937,6 +939,53 @@ export const gameReducer: GameReducer = (state, action) => {
         phase: 'awaiting-roll',
         log: appendGameLog(state.log, [
           { type: 'turn-change', fromPlayerId: currentPlayer.id, toPlayerId: nextPlayer.id },
+        ]),
+      }
+    }
+    case 'build-house': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const property = STREET_PROPERTIES.find((street) => street.id === action.propertyId)
+      const buildings = state.propertyBuildings[action.propertyId]
+
+      if (
+        (state.phase !== 'awaiting-roll' && state.phase !== 'awaiting-player-action') ||
+        state.pendingCard !== null ||
+        !currentPlayer ||
+        !property ||
+        !buildings ||
+        buildings.houses >= 4 ||
+        buildings.hotels > 0 ||
+        currentPlayer.cash < property.houseCost ||
+        !getHouseBuildingEligibility({
+          playerId: currentPlayer.id,
+          propertyId: action.propertyId,
+          ownership: state.ownership,
+          mortgagedProperties: state.mortgagedProperties,
+          propertyBuildings: state.propertyBuildings,
+        }).eligible
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        players: state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? { ...player, cash: player.cash - property.houseCost }
+            : player,
+        ),
+        propertyBuildings: {
+          ...state.propertyBuildings,
+          [action.propertyId]: { ...buildings, houses: buildings.houses + 1 },
+        },
+        log: appendGameLog(state.log, [
+          {
+            type: 'payment',
+            payerId: currentPlayer.id,
+            payeeId: null,
+            amount: property.houseCost,
+            reason: 'house-purchase',
+          },
         ]),
       }
     }

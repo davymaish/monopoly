@@ -45,6 +45,31 @@ describe('calculateStreetRent', () => {
 
     expect(calculateStreetRent('vermont-avenue', ownership)).toBe(6)
   })
+
+  it('uses the house rent schedule instead of base or complete-group rent', () => {
+    const ownership = {
+      ...createInitialPropertyOwnership(),
+      'oriental-avenue': 'player-1',
+      'vermont-avenue': 'player-1',
+      'connecticut-avenue': 'player-1',
+    }
+
+    expect(
+      calculateStreetRent('vermont-avenue', ownership, {
+        'vermont-avenue': { houses: 1, hotels: 0 },
+      }),
+    ).toBe(30)
+  })
+
+  it('uses hotel rent when the street has a hotel', () => {
+    const ownership = { ...createInitialPropertyOwnership(), 'vermont-avenue': 'player-1' }
+
+    expect(
+      calculateStreetRent('vermont-avenue', ownership, {
+        'vermont-avenue': { houses: 0, hotels: 1 },
+      }),
+    ).toBe(550)
+  })
 })
 
 describe('calculateRailroadRent', () => {
