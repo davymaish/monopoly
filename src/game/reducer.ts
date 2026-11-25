@@ -14,6 +14,8 @@ import { UTILITIES } from './utility-data'
 import { getCardDefinition } from './cards'
 import { STREET_PROPERTIES } from './street-data'
 
+const TOTAL_HOUSE_SUPPLY = 32
+
 function finishAuction(state: GameState, auction: AuctionState): GameState {
   const winner = auction.highBidderId
     ? state.players.find((player) => player.id === auction.highBidderId)
@@ -946,6 +948,10 @@ export const gameReducer: GameReducer = (state, action) => {
       const currentPlayer = state.players[state.currentPlayerIndex]
       const property = STREET_PROPERTIES.find((street) => street.id === action.propertyId)
       const buildings = state.propertyBuildings[action.propertyId]
+      const housesInUse = Object.values(state.propertyBuildings).reduce(
+        (total, propertyBuildings) => total + propertyBuildings.houses,
+        0,
+      )
 
       if (
         (state.phase !== 'awaiting-roll' && state.phase !== 'awaiting-player-action') ||
@@ -953,6 +959,7 @@ export const gameReducer: GameReducer = (state, action) => {
         !currentPlayer ||
         !property ||
         !buildings ||
+        housesInUse >= TOTAL_HOUSE_SUPPLY ||
         buildings.houses >= 4 ||
         buildings.hotels > 0 ||
         currentPlayer.cash < property.houseCost ||
