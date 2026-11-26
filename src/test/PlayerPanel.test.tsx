@@ -34,4 +34,18 @@ describe('PlayerPanel', () => {
     expect(players[1]).toHaveAttribute('aria-current', 'true')
     expect(screen.getByText('Current turn')).toBeInTheDocument()
   })
+
+  it('marks a bankrupt player without presenting them as active', () => {
+    const initialState = createInitialGameState({
+      playerCount: 2,
+      playerNames: ['Alex', 'Jordan'],
+      playerColors: ['red', 'blue'],
+    })
+    const gameState = { ...initialState, bankruptPlayerIds: ['player-1'] }
+
+    render(<PlayerPanel gameState={gameState} />)
+
+    expect(screen.getByText('Bankrupt')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')[0]).not.toHaveAttribute('aria-current', 'true')
+  })
 })

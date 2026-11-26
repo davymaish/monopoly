@@ -230,8 +230,11 @@ describe('TurnSummary', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Alex owes $50 to the bank for jail bail. Available cash: $40. Sell buildings or mortgage eligible properties before paying.',
+      'Alex owes $50 to the bank for jail bail. Available cash: $40. Use a Get Out of Jail Free card or sell buildings and mortgage eligible properties before paying.',
     )
+    expect(
+      screen.queryByRole('button', { name: 'Declare bankruptcy to the bank' }),
+    ).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Use Get Out of Jail Free card' }))
     expect(onUseJailFreeCard).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Pay $50 bail' })).not.toBeInTheDocument()
@@ -275,5 +278,42 @@ describe('TurnSummary', () => {
     expect(onPayDebt).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: 'Roll dice' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+  })
+
+  it('offers bank bankruptcy only after no legal remedies remain', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, cash: 0 } : player,
+      ),
+      debtResolution: {
+        debtorId: 'player-1',
+        creditorId: null,
+        amount: 100,
+        reason: 'tax' as const,
+        resumeJailMovement: false,
+      },
+      phase: 'awaiting-player-action' as const,
+    }
+    const onDeclareBankruptcy = vi.fn()
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onDeclareBankruptcy={onDeclareBankruptcy}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Declare bankruptcy to the bank' }))
+    expect(onDeclareBankruptcy).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No legal building sales or mortgages remain.',
+    )
   })
 })
