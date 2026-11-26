@@ -78,6 +78,7 @@ export function createInitialGameState(
     decks: createShuffledDecks(randomSource),
     pendingCard: null,
     heldJailFreeCards: [],
+    bankruptPlayerIds: [],
     doublesCount: 0,
     extraRollAvailable: false,
     jailAttemptInProgress: false,
