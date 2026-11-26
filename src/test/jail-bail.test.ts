@@ -56,6 +56,27 @@ describe('Jail bail', () => {
     expect(gameReducer(debtState, { type: 'end-turn' })).toBe(debtState)
   })
 
+  it('allows a debtor to mortgage property and pay bail before rolling', () => {
+    const jailed = createJailedState(40)
+    const state: GameState = {
+      ...jailed,
+      ownership: { ...jailed.ownership, 'mediterranean-avenue': 'player-1' },
+    }
+    const debt = gameReducer(state, { type: 'pay-jail-bail' })
+    const mortgaged = gameReducer(debt, {
+      type: 'mortgage-property',
+      propertyId: 'mediterranean-avenue',
+    })
+    const paid = gameReducer(mortgaged, { type: 'pay-debt' })
+
+    expect(paid.players[0]).toMatchObject({ cash: 20, isInJail: false, jailTurns: 0 })
+    expect(paid).toMatchObject({ debtResolution: null, phase: 'awaiting-roll', dice: null })
+    expect(paid.log.slice(-2).map(({ event }) => event)).toEqual([
+      { type: 'payment', payerId: 'player-1', payeeId: null, amount: 50, reason: 'jail-bail' },
+      { type: 'released-from-jail', playerId: 'player-1', method: 'bail' },
+    ])
+  })
+
   it('rejects bail when the active player is not in Jail or is not at a roll decision', () => {
     const state = createInitialGameState(setup)
     expect(gameReducer(state, { type: 'pay-jail-bail' })).toBe(state)
