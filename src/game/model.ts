@@ -29,12 +29,30 @@ export interface AuctionState {
   passedPlayerIds: PlayerId[]
 }
 
+export type PaymentReason =
+  | 'rent'
+  | 'tax'
+  | 'property-purchase'
+  | 'unmortgage'
+  | 'house-purchase'
+  | 'hotel-purchase'
+  | 'card'
+  | 'jail-bail'
+
+export interface PaymentObligation {
+  debtorId: PlayerId
+  creditorId: PlayerId | null
+  amount: number
+  reason: PaymentReason
+}
+
 export interface DebtResolutionState {
   debtorId: PlayerId
   creditorId: PlayerId | null
   amount: number
-  reason: 'jail-bail'
+  reason: PaymentReason
   resumeJailMovement: boolean
+  remainingPayments?: PaymentObligation[]
 }
 
 export interface DrawnCard {
@@ -79,15 +97,7 @@ export type GameLogEvent =
       payerId: PlayerId
       payeeId: PlayerId | null
       amount: number
-      reason:
-        | 'rent'
-        | 'tax'
-        | 'property-purchase'
-        | 'unmortgage'
-        | 'house-purchase'
-        | 'hotel-purchase'
-        | 'card'
-        | 'jail-bail'
+      reason: PaymentReason
     }
   | {
       type: 'rent-skipped'

@@ -230,7 +230,7 @@ describe('TurnSummary', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'The $50 bail exceeds available cash. Resolve this debt before taking another action.',
+      'Alex owes $50 to the bank for jail bail. Available cash: $40. Sell buildings or mortgage eligible properties before paying.',
     )
     fireEvent.click(screen.getByRole('button', { name: 'Use Get Out of Jail Free card' }))
     expect(onUseJailFreeCard).toHaveBeenCalledTimes(1)
@@ -238,6 +238,42 @@ describe('TurnSummary', () => {
     expect(
       screen.queryByRole('button', { name: 'Attempt to roll doubles' }),
     ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
+  })
+
+  it('offers payment when a debt is affordable and hides dice and turn controls', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, cash: 20 } : player,
+      ),
+      debtResolution: {
+        debtorId: 'player-1',
+        creditorId: 'player-2',
+        amount: 10,
+        reason: 'rent' as const,
+        resumeJailMovement: false,
+      },
+      phase: 'awaiting-player-action' as const,
+    }
+    const onPayDebt = vi.fn()
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onPayDebt={onPayDebt}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pay $10 debt' }))
+    expect(onPayDebt).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: 'Roll dice' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
   })
 })

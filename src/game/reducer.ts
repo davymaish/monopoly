@@ -10,7 +10,14 @@ import {
 } from './building-eligibility'
 import { resolveLanding } from './landing'
 import { appendGameLog } from './log'
-import type { AuctionState, GameLogEvent, GameState, Player, PlayerId } from './model'
+import type {
+  AuctionState,
+  GameLogEvent,
+  GameState,
+  PaymentObligation,
+  Player,
+  PlayerId,
+} from './model'
 import { BOARD_SPACE_COUNT, calculateDestinationPosition, GO_SALARY } from './movement'
 import { getPurchasableDeedById } from './purchasable'
 import { RAILROADS } from './railroad-data'
@@ -117,6 +124,53 @@ function calculatePropertyRepairCost(
   }, 0)
 }
 
+function applyPaymentObligations(
+  players: Player[],
+  obligations: PaymentObligation[],
+): {
+  players: Player[]
+  debtResolution: GameState['debtResolution']
+  events: GameLogEvent[]
+} {
+  let updatedPlayers = players
+  const events: GameLogEvent[] = []
+
+  for (const [index, obligation] of obligations.entries()) {
+    const debtor = updatedPlayers.find((player) => player.id === obligation.debtorId)
+    if (!debtor) continue
+
+    if (debtor.cash < obligation.amount) {
+      const remainingPayments = obligations.slice(index + 1)
+      return {
+        players: updatedPlayers,
+        debtResolution: {
+          ...obligation,
+          resumeJailMovement: false,
+          ...(remainingPayments.length > 0 ? { remainingPayments } : {}),
+        },
+        events,
+      }
+    }
+
+    updatedPlayers = updatedPlayers.map((player) =>
+      player.id === obligation.debtorId
+        ? { ...player, cash: player.cash - obligation.amount }
+        : player.id === obligation.creditorId
+          ? { ...player, cash: player.cash + obligation.amount }
+          : player,
+    )
+    events.push({
+      type: 'payment',
+      payerId: obligation.debtorId,
+      payeeId: obligation.creditorId,
+      amount: obligation.amount,
+      reason: obligation.reason,
+    })
+  }
+
+  return { players: updatedPlayers, debtResolution: null, events }
+}
+
 function resolveCardMovement(
   state: GameState,
   currentPlayer: Player,
@@ -127,6 +181,7 @@ function resolveCardMovement(
 ): {
   players: Player[]
   landingResolution: GameState['landingResolution']
+  debtResolution: GameState['debtResolution']
   events: GameLogEvent[]
 } {
   const landingResolution = resolveLanding(
@@ -157,16 +212,14 @@ function resolveCardMovement(
               options.useNearestUtilityCardMultiplier,
             )
           : 0
-  const players = state.players.map((player) =>
+  const movedPlayers = state.players.map((player) =>
     player.id === currentPlayer.id
       ? {
           ...player,
           position: destination.position,
-          cash: player.cash + goSalary - rentAmount,
+          cash: player.cash + goSalary,
         }
-      : player.id === rentOwnerId
-        ? { ...player, cash: player.cash + rentAmount }
-        : player,
+      : player,
   )
   const events: GameLogEvent[] = [
     {
@@ -187,15 +240,22 @@ function resolveCardMovement(
     })
   }
 
-  if (rentAmount > 0 && rentOwnerId) {
-    events.push({
-      type: 'payment',
-      payerId: currentPlayer.id,
-      payeeId: rentOwnerId,
-      amount: rentAmount,
-      reason: 'rent',
-    })
-  } else if (landingResolution.type === 'mortgaged-property') {
+  const payment =
+    rentAmount > 0 && rentOwnerId
+      ? applyPaymentObligations(movedPlayers, [
+          {
+            debtorId: currentPlayer.id,
+            creditorId: rentOwnerId,
+            amount: rentAmount,
+            reason: 'rent',
+          },
+        ])
+      : { players: movedPlayers, debtResolution: null, events: [] as GameLogEvent[] }
+
+  if (payment.events.length > 0) {
+    events.push(...payment.events)
+  }
+  if (!(rentAmount > 0 && rentOwnerId) && landingResolution.type === 'mortgaged-property') {
     events.push({
       type: 'rent-skipped',
       payerId: currentPlayer.id,
@@ -205,7 +265,12 @@ function resolveCardMovement(
     })
   }
 
-  return { players, landingResolution, events }
+  return {
+    players: payment.players,
+    landingResolution,
+    debtResolution: payment.debtResolution,
+    events,
+  }
 }
 
 function applyJailTransition(
@@ -244,7 +309,11 @@ export const gameReducer: GameReducer = (state, action) => {
     action.type === 'use-jail-free-card' &&
     state.debtResolution?.reason === 'jail-bail' &&
     state.debtResolution.debtorId === activePlayer?.id
-  if (state.debtResolution !== null && !isJailBailDebtCardUse) {
+  const isDebtRemedy =
+    action.type === 'pay-debt' ||
+    action.type === 'sell-building' ||
+    action.type === 'mortgage-property'
+  if (state.debtResolution !== null && !isDebtRemedy && !isJailBailDebtCardUse) {
     return state
   }
 
@@ -352,6 +421,66 @@ export const gameReducer: GameReducer = (state, action) => {
           { type: 'released-from-jail', playerId: currentPlayer.id, method: 'bail' },
         ]),
       }
+    }
+    case 'pay-debt': {
+      const debt = state.debtResolution
+      const debtor = debt ? state.players.find((player) => player.id === debt.debtorId) : undefined
+
+      if (
+        state.phase !== 'awaiting-player-action' ||
+        !debt ||
+        !debtor ||
+        debtor.cash < debt.amount
+      ) {
+        return state
+      }
+
+      const obligations: PaymentObligation[] = [
+        {
+          debtorId: debt.debtorId,
+          creditorId: debt.creditorId,
+          amount: debt.amount,
+          reason: debt.reason,
+        },
+        ...(debt.remainingPayments ?? []),
+      ]
+      const settlement = applyPaymentObligations(state.players, obligations)
+      const resumeJailMovement = debt.reason === 'jail-bail' && debt.resumeJailMovement
+      const releasesFromJail = debt.reason === 'jail-bail' && settlement.debtResolution === null
+      const players = releasesFromJail
+        ? settlement.players.map((player) =>
+            player.id === debt.debtorId ? { ...player, isInJail: false, jailTurns: 0 } : player,
+          )
+        : settlement.players
+      const events = [...settlement.events]
+      if (releasesFromJail) {
+        events.push({ type: 'released-from-jail', playerId: debt.debtorId, method: 'bail' })
+      }
+      const settledState: GameState = {
+        ...state,
+        players,
+        debtResolution: settlement.debtResolution
+          ? { ...settlement.debtResolution, resumeJailMovement: debt.resumeJailMovement }
+          : null,
+        ...(debt.reason === 'tax' && settlement.debtResolution === null
+          ? { landingResolution: null }
+          : {}),
+        ...(releasesFromJail
+          ? {
+              doublesCount: 0,
+              extraRollAvailable: false,
+              jailAttemptInProgress: false,
+              landingResolution: null,
+              dice: resumeJailMovement ? state.dice : null,
+              phase: resumeJailMovement ? 'resolving-turn' : 'awaiting-roll',
+            }
+          : {}),
+        log: appendGameLog(state.log, events),
+      }
+
+      return releasesFromJail && resumeJailMovement
+        ? gameReducer(settledState, { type: 'move-player' })
+        : settledState
     }
     case 'roll-dice':
       if (
@@ -535,11 +664,19 @@ export const gameReducer: GameReducer = (state, action) => {
       const movedPlayers = state.players.map((player, index) => ({
         ...player,
         ...(index === state.currentPlayerIndex ? { position: destination } : {}),
-        cash:
-          player.cash +
-          (index === state.currentPlayerIndex ? (passesGo ? GO_SALARY : 0) - rentAmount : 0) +
-          (player.id === rentOwnerId ? rentAmount : 0),
+        cash: player.cash + (index === state.currentPlayerIndex && passesGo ? GO_SALARY : 0),
       }))
+      const payment =
+        rentAmount > 0 && rentOwnerId
+          ? applyPaymentObligations(movedPlayers, [
+              {
+                debtorId: currentPlayer.id,
+                creditorId: rentOwnerId,
+                amount: rentAmount,
+                reason: 'rent',
+              },
+            ])
+          : { players: movedPlayers, debtResolution: null, events: [] as GameLogEvent[] }
       const jailTransition = sentToJail
         ? applyJailTransition(state, movedPlayers, currentPlayer, 'board')
         : null
@@ -564,14 +701,8 @@ export const gameReducer: GameReducer = (state, action) => {
 
       if (jailTransition) events.push(jailTransition.event)
 
-      if (rentAmount > 0 && rentOwnerId) {
-        events.push({
-          type: 'payment',
-          payerId: currentPlayer.id,
-          payeeId: rentOwnerId,
-          amount: rentAmount,
-          reason: 'rent',
-        })
+      if (payment.events.length > 0) {
+        events.push(...payment.events)
       } else if (landingResolution?.type === 'mortgaged-property') {
         events.push({
           type: 'rent-skipped',
@@ -584,7 +715,8 @@ export const gameReducer: GameReducer = (state, action) => {
 
       return {
         ...state,
-        players: jailTransition?.players ?? movedPlayers,
+        players: jailTransition?.players ?? payment.players,
+        debtResolution: payment.debtResolution,
         landingResolution: jailTransition?.landingResolution ?? landingResolution,
         ...(jailTransition ? { doublesCount: 0, extraRollAvailable: false } : {}),
         phase: 'awaiting-player-action',
@@ -610,15 +742,15 @@ export const gameReducer: GameReducer = (state, action) => {
         return state
       }
 
+      const payment = applyPaymentObligations(state.players, [
+        { debtorId: currentPlayer.id, creditorId: null, amount, reason: 'tax' },
+      ])
       return {
         ...state,
-        players: state.players.map((player, index) =>
-          index === state.currentPlayerIndex ? { ...player, cash: player.cash - amount } : player,
-        ),
-        landingResolution: null,
-        log: appendGameLog(state.log, [
-          { type: 'payment', payerId: currentPlayer.id, payeeId: null, amount, reason: 'tax' },
-        ]),
+        players: payment.players,
+        debtResolution: payment.debtResolution,
+        landingResolution: payment.debtResolution ? resolution : null,
+        log: appendGameLog(state.log, payment.events),
       }
     }
     case 'draw-card': {
@@ -690,6 +822,8 @@ export const gameReducer: GameReducer = (state, action) => {
       let landingResolution = state.landingResolution
       let doublesCount = state.doublesCount
       let extraRollAvailable = state.extraRollAvailable
+      let debtResolution: GameState['debtResolution'] = null
+      const obligations: PaymentObligation[] = []
       const events: GameLogEvent[] = []
 
       if (effect?.type === 'go-to-jail') {
@@ -702,12 +836,12 @@ export const gameReducer: GameReducer = (state, action) => {
           events.push(jailTransition.event)
         }
       } else if (effect?.type === 'cash') {
-        const cashChange = effect.direction === 'collect' ? effect.amount : -effect.amount
-        players = state.players.map((player) =>
-          player.id === currentPlayer.id ? { ...player, cash: player.cash + cashChange } : player,
-        )
-
         if (effect.direction === 'collect') {
+          players = state.players.map((player) =>
+            player.id === currentPlayer.id
+              ? { ...player, cash: player.cash + effect.amount }
+              : player,
+          )
           events.push({
             type: 'income',
             playerId: currentPlayer.id,
@@ -715,40 +849,27 @@ export const gameReducer: GameReducer = (state, action) => {
             reason: 'card',
           })
         } else {
-          events.push({
-            type: 'payment',
-            payerId: currentPlayer.id,
-            payeeId: null,
+          obligations.push({
+            debtorId: currentPlayer.id,
+            creditorId: null,
             amount: effect.amount,
             reason: 'card',
           })
         }
       } else if (effect?.type === 'collect-from-each-opponent') {
-        players = state.players.map((player) =>
-          player.id === currentPlayer.id
-            ? { ...player, cash: player.cash + effect.amount * opponents.length }
-            : { ...player, cash: player.cash - effect.amount },
-        )
         for (const opponent of opponents) {
-          events.push({
-            type: 'payment',
-            payerId: opponent.id,
-            payeeId: currentPlayer.id,
+          obligations.push({
+            debtorId: opponent.id,
+            creditorId: currentPlayer.id,
             amount: effect.amount,
             reason: 'card',
           })
         }
       } else if (effect?.type === 'pay-each-opponent') {
-        players = state.players.map((player) =>
-          player.id === currentPlayer.id
-            ? { ...player, cash: player.cash - effect.amount * opponents.length }
-            : { ...player, cash: player.cash + effect.amount },
-        )
         for (const opponent of opponents) {
-          events.push({
-            type: 'payment',
-            payerId: currentPlayer.id,
-            payeeId: opponent.id,
+          obligations.push({
+            debtorId: currentPlayer.id,
+            creditorId: opponent.id,
             amount: effect.amount,
             reason: 'card',
           })
@@ -762,13 +883,9 @@ export const gameReducer: GameReducer = (state, action) => {
         )
 
         if (amount > 0) {
-          players = state.players.map((player) =>
-            player.id === currentPlayer.id ? { ...player, cash: player.cash - amount } : player,
-          )
-          events.push({
-            type: 'payment',
-            payerId: currentPlayer.id,
-            payeeId: null,
+          obligations.push({
+            debtorId: currentPlayer.id,
+            creditorId: null,
             amount,
             reason: 'card',
           })
@@ -823,6 +940,7 @@ export const gameReducer: GameReducer = (state, action) => {
           )
           players = movement.players
           landingResolution = movement.landingResolution
+          debtResolution = movement.debtResolution
           events.push(...movement.events)
         }
       } else if (effect?.type === 'advance-to-nearest-railroad') {
@@ -844,6 +962,7 @@ export const gameReducer: GameReducer = (state, action) => {
           )
           players = movement.players
           landingResolution = movement.landingResolution
+          debtResolution = movement.debtResolution
           events.push(...movement.events)
         }
       } else if (effect?.type === 'advance-to-nearest-utility') {
@@ -865,6 +984,7 @@ export const gameReducer: GameReducer = (state, action) => {
           )
           players = movement.players
           landingResolution = movement.landingResolution
+          debtResolution = movement.debtResolution
           events.push(...movement.events)
         }
       } else if (effect?.type === 'move-back') {
@@ -877,8 +997,16 @@ export const gameReducer: GameReducer = (state, action) => {
           const movement = resolveCardMovement(state, currentPlayer, destination, -effect.spaces, 0)
           players = movement.players
           landingResolution = movement.landingResolution
+          debtResolution = movement.debtResolution
           events.push(...movement.events)
         }
+      }
+
+      if (obligations.length > 0) {
+        const payment = applyPaymentObligations(players, obligations)
+        players = payment.players
+        debtResolution = payment.debtResolution
+        events.push(...payment.events)
       }
 
       events.push({
@@ -892,6 +1020,7 @@ export const gameReducer: GameReducer = (state, action) => {
         ...state,
         players,
         landingResolution,
+        debtResolution,
         doublesCount,
         extraRollAvailable,
         decks: {
@@ -1051,7 +1180,9 @@ export const gameReducer: GameReducer = (state, action) => {
       }
     }
     case 'sell-building': {
-      const currentPlayer = state.players[state.currentPlayerIndex]
+      const currentPlayer = state.debtResolution
+        ? state.players.find((player) => player.id === state.debtResolution?.debtorId)
+        : state.players[state.currentPlayerIndex]
       const property = STREET_PROPERTIES.find((street) => street.id === action.propertyId)
       const buildings = state.propertyBuildings[action.propertyId]
       const isHotelSale = buildings?.hotels === 1
@@ -1102,7 +1233,9 @@ export const gameReducer: GameReducer = (state, action) => {
       }
     }
     case 'mortgage-property': {
-      const currentPlayer = state.players[state.currentPlayerIndex]
+      const currentPlayer = state.debtResolution
+        ? state.players.find((player) => player.id === state.debtResolution?.debtorId)
+        : state.players[state.currentPlayerIndex]
       const deed = getPurchasableDeedById(action.propertyId)
       const street = STREET_PROPERTIES.find((property) => property.id === action.propertyId)
       const groupHasBuildings =

@@ -92,6 +92,12 @@ export default function App(): ReactElement {
     )
   }
 
+  function handlePayDebt() {
+    setGameState((currentState) =>
+      currentState ? gameReducer(currentState, { type: 'pay-debt' }) : currentState,
+    )
+  }
+
   function handleUseJailFreeCard() {
     setGameState((currentState) =>
       currentState ? gameReducer(currentState, { type: 'use-jail-free-card' }) : currentState,
@@ -189,6 +195,7 @@ export default function App(): ReactElement {
               onRollDice={handleRollDice}
               onRollJailAttempt={handleRollJailAttempt}
               onPayJailBail={handlePayJailBail}
+              onPayDebt={handlePayDebt}
               onUseJailFreeCard={handleUseJailFreeCard}
               onMovePlayer={handleMovePlayer}
               onEndTurn={handleEndTurn}
@@ -205,7 +212,9 @@ export default function App(): ReactElement {
               onBid={handleAuctionBid}
               onPass={handleAuctionPass}
             />
-            <TaxPrompt gameState={gameState} onPayTax={handlePayTax} />
+            {gameState.debtResolution === null && (
+              <TaxPrompt gameState={gameState} onPayTax={handlePayTax} />
+            )}
             <DiceDisplay dice={gameState.dice} />
             <BoardPerimeter
               onSelectDeed={setSelectedDeed}
