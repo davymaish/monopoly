@@ -3,7 +3,7 @@ import { getBuildingSaleEligibility, TOTAL_HOUSE_SUPPLY } from './building-eligi
 import type { GameState, PlayerId } from './model'
 import { STREET_PROPERTIES } from './street-data'
 
-export function canDeclareBankruptcyToBank(state: GameState, playerId: PlayerId): boolean {
+function canDeclareBankruptcy(state: GameState, playerId: PlayerId): boolean {
   const debt = state.debtResolution
   const debtor = state.players.find((player) => player.id === playerId)
 
@@ -11,7 +11,6 @@ export function canDeclareBankruptcyToBank(state: GameState, playerId: PlayerId)
     state.phase !== 'awaiting-player-action' ||
     !debt ||
     debt.debtorId !== playerId ||
-    debt.creditorId !== null ||
     !debtor ||
     state.bankruptPlayerIds.includes(playerId) ||
     (debt.reason === 'jail-bail' && debtor.getOutOfJailFreeCardCount > 0) ||
@@ -66,4 +65,22 @@ export function canDeclareBankruptcyToBank(state: GameState, playerId: PlayerId)
   })
 
   return !canMortgageProperty
+}
+
+export function canDeclareBankruptcyToBank(state: GameState, playerId: PlayerId): boolean {
+  return state.debtResolution?.creditorId === null && canDeclareBankruptcy(state, playerId)
+}
+
+export function canDeclareBankruptcyToPlayer(state: GameState, playerId: PlayerId): boolean {
+  const creditorId = state.debtResolution?.creditorId
+  const creditor = creditorId ? state.players.find((player) => player.id === creditorId) : undefined
+
+  return (
+    creditorId !== null &&
+    creditorId !== undefined &&
+    creditorId !== playerId &&
+    creditor !== undefined &&
+    !state.bankruptPlayerIds.includes(creditorId) &&
+    canDeclareBankruptcy(state, playerId)
+  )
 }

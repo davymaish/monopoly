@@ -1,6 +1,6 @@
 import type { GameReducer } from './actions'
 import { BOARD_SPACES } from './board'
-import { canDeclareBankruptcyToBank } from './bankruptcy'
+import { canDeclareBankruptcyToBank, canDeclareBankruptcyToPlayer } from './bankruptcy'
 import type { BoardSpace } from './board-space'
 import {
   TOTAL_HOTEL_SUPPLY,
@@ -29,13 +29,11 @@ import { getCardDefinition } from './cards'
 import { STREET_PROPERTIES } from './street-data'
 
 function resumeAfterBankruptcy(state: GameState, debtorId: PlayerId): GameState {
-  const currentPlayer = state.players[state.currentPlayerIndex]
-  if (!currentPlayer || currentPlayer.id !== debtorId) {
-    return { ...state, auction: null, phase: 'awaiting-player-action' }
-  }
+  const debtorIndex = state.players.findIndex((player) => player.id === debtorId)
+  if (debtorIndex < 0) return { ...state, auction: null, phase: 'game-over' }
 
   for (let step = 1; step <= state.players.length; step += 1) {
-    const nextPlayerIndex = (state.currentPlayerIndex + step) % state.players.length
+    const nextPlayerIndex = (debtorIndex + step) % state.players.length
     const nextPlayer = state.players[nextPlayerIndex]
     if (!nextPlayer || state.bankruptPlayerIds.includes(nextPlayer.id)) continue
 
@@ -61,9 +59,10 @@ function startBankruptcyAuction(
   state: GameState,
   debtorId: PlayerId,
   propertyIds: string[],
+  resumeAfterPlayerId = debtorId,
 ): GameState {
   const propertyId = propertyIds[0]
-  if (!propertyId) return resumeAfterBankruptcy(state, debtorId)
+  if (!propertyId) return resumeAfterBankruptcy(state, resumeAfterPlayerId)
 
   const debtorIndex = state.players.findIndex((player) => player.id === debtorId)
   const biddingOrder = [
@@ -84,6 +83,7 @@ function startBankruptcyAuction(
       },
       debtorId,
       propertyIds.slice(1),
+      resumeAfterPlayerId,
     )
   }
 
@@ -97,7 +97,7 @@ function startBankruptcyAuction(
       highBid: 0,
       highBidderId: null,
       passedPlayerIds: [],
-      bankruptcy: { debtorId, remainingPropertyIds: propertyIds.slice(1) },
+      bankruptcy: { debtorId, remainingPropertyIds: propertyIds.slice(1), resumeAfterPlayerId },
     },
     phase: 'auction',
   }
@@ -156,6 +156,7 @@ function finishAuction(state: GameState, auction: AuctionState): GameState {
     completedState,
     auction.bankruptcy.debtorId,
     auction.bankruptcy.remainingPropertyIds,
+    auction.bankruptcy.resumeAfterPlayerId ?? auction.bankruptcy.debtorId,
   )
 }
 
@@ -251,7 +252,7 @@ function applyPaymentObligations(
   return { players: updatedPlayers, debtResolution: null, events }
 }
 
-function declareBankruptcy(state: GameState): GameState {
+function declareBankruptcyToBank(state: GameState): GameState {
   const debt = state.debtResolution
   const debtor = debt ? state.players.find((player) => player.id === debt.debtorId) : undefined
 
@@ -350,7 +351,166 @@ function declareBankruptcy(state: GameState): GameState {
     log: appendGameLog(state.log, events),
   }
 
-  return startBankruptcyAuction(bankruptState, debtor.id, propertyIds)
+  return startBankruptcyAuction(
+    bankruptState,
+    debtor.id,
+    propertyIds,
+    debt.resumeAfterPlayerId ?? debtor.id,
+  )
+}
+
+function declareBankruptcyToPlayer(state: GameState): GameState {
+  const debt = state.debtResolution
+  const debtor = debt ? state.players.find((player) => player.id === debt.debtorId) : undefined
+  const creditor = debt?.creditorId
+    ? state.players.find((player) => player.id === debt.creditorId)
+    : undefined
+
+  if (!debt || !debtor || !creditor || !canDeclareBankruptcyToPlayer(state, debtor.id)) {
+    return state
+  }
+
+  const buildingSaleProceeds = STREET_PROPERTIES.reduce((total, property) => {
+    const buildings = state.propertyBuildings[property.id]
+    return state.ownership[property.id] === debtor.id && buildings
+      ? total + (buildings.houses + buildings.hotels) * (property.houseCost / 2)
+      : total
+  }, 0)
+  const cashAfterBuildingSales = debtor.cash + buildingSaleProceeds
+  const propertyBuildings = { ...state.propertyBuildings }
+
+  for (const property of STREET_PROPERTIES) {
+    if (state.ownership[property.id] === debtor.id) {
+      propertyBuildings[property.id] = { houses: 0, hotels: 0 }
+    }
+  }
+
+  const liquidationEvents: GameLogEvent[] =
+    buildingSaleProceeds > 0
+      ? [
+          {
+            type: 'income',
+            playerId: debtor.id,
+            amount: buildingSaleProceeds,
+            reason: 'building-sale',
+          },
+        ]
+      : []
+  const liquidatedState: GameState = {
+    ...state,
+    players: state.players.map((player) =>
+      player.id === debtor.id ? { ...player, cash: cashAfterBuildingSales } : player,
+    ),
+    propertyBuildings,
+    log: appendGameLog(state.log, liquidationEvents),
+  }
+
+  if (cashAfterBuildingSales >= debt.amount) {
+    return gameReducer(liquidatedState, { type: 'pay-debt' })
+  }
+
+  const propertyIds = BOARD_SPACES.filter(
+    (space) =>
+      (space.kind === 'property' || space.kind === 'railroad' || space.kind === 'utility') &&
+      state.ownership[space.id] === debtor.id,
+  ).map(({ id }) => id)
+  const returnedCards = state.heldJailFreeCards.filter((card) => card.playerId === debtor.id)
+  const events: GameLogEvent[] = [
+    ...liquidationEvents,
+    ...returnedCards.map((card) => ({
+      type: 'card-transferred' as const,
+      fromPlayerId: debtor.id,
+      toPlayerId: creditor.id,
+      deck: card.deck,
+      cardId: card.cardId,
+    })),
+    ...(cashAfterBuildingSales > 0
+      ? [
+          {
+            type: 'payment' as const,
+            payerId: debtor.id,
+            payeeId: creditor.id,
+            amount: cashAfterBuildingSales,
+            reason: 'bankruptcy' as const,
+          },
+        ]
+      : []),
+    { type: 'bankruptcy', playerId: debtor.id, creditorId: creditor.id },
+  ]
+  const bankruptState: GameState = {
+    ...liquidatedState,
+    players: liquidatedState.players.map((player) =>
+      player.id === debtor.id
+        ? { ...player, cash: 0, getOutOfJailFreeCardCount: 0 }
+        : player.id === creditor.id
+          ? {
+              ...player,
+              cash: player.cash + cashAfterBuildingSales,
+              getOutOfJailFreeCardCount: player.getOutOfJailFreeCardCount + returnedCards.length,
+            }
+          : player,
+    ),
+    ownership: Object.fromEntries(
+      Object.entries(state.ownership).map(([propertyId, ownerId]) => [
+        propertyId,
+        ownerId === debtor.id ? creditor.id : ownerId,
+      ]),
+    ),
+    heldJailFreeCards: state.heldJailFreeCards.map((card) =>
+      card.playerId === debtor.id ? { ...card, playerId: creditor.id } : card,
+    ),
+    bankruptPlayerIds: [...state.bankruptPlayerIds, debtor.id],
+    debtResolution: null,
+    landingResolution: null,
+    pendingCard: null,
+    auction: null,
+    doublesCount: 0,
+    extraRollAvailable: false,
+    dice: null,
+    log: appendGameLog(state.log, events),
+  }
+  const mortgageInterestDue = propertyIds.reduce((total, propertyId) => {
+    const deed = getPurchasableDeedById(propertyId)
+    return state.mortgagedProperties.includes(propertyId) && deed
+      ? total + Math.ceil(deed.mortgageValue / 10)
+      : total
+  }, 0)
+
+  if (mortgageInterestDue === 0) return resumeAfterBankruptcy(bankruptState, debtor.id)
+
+  const interestSettlement = applyPaymentObligations(bankruptState.players, [
+    {
+      debtorId: creditor.id,
+      creditorId: null,
+      amount: mortgageInterestDue,
+      reason: 'mortgage-interest',
+    },
+  ])
+  const settledState: GameState = {
+    ...bankruptState,
+    players: interestSettlement.players,
+    debtResolution: interestSettlement.debtResolution
+      ? { ...interestSettlement.debtResolution, resumeAfterPlayerId: debtor.id }
+      : null,
+    log: appendGameLog(bankruptState.log, interestSettlement.events),
+  }
+
+  if (settledState.debtResolution) {
+    const creditorIndex = settledState.players.findIndex((player) => player.id === creditor.id)
+    return {
+      ...settledState,
+      currentPlayerIndex: creditorIndex >= 0 ? creditorIndex : settledState.currentPlayerIndex,
+      phase: 'awaiting-player-action',
+    }
+  }
+
+  return resumeAfterBankruptcy(settledState, debtor.id)
+}
+
+function declareBankruptcy(state: GameState): GameState {
+  return state.debtResolution?.creditorId === null
+    ? declareBankruptcyToBank(state)
+    : declareBankruptcyToPlayer(state)
 }
 
 function resolveCardMovement(
@@ -643,7 +803,13 @@ export const gameReducer: GameReducer = (state, action) => {
         ...state,
         players,
         debtResolution: settlement.debtResolution
-          ? { ...settlement.debtResolution, resumeJailMovement: debt.resumeJailMovement }
+          ? {
+              ...settlement.debtResolution,
+              resumeJailMovement: debt.resumeJailMovement,
+              ...(debt.resumeAfterPlayerId
+                ? { resumeAfterPlayerId: debt.resumeAfterPlayerId }
+                : {}),
+            }
           : null,
         ...(debt.reason === 'tax' && settlement.debtResolution === null
           ? { landingResolution: null }
@@ -661,9 +827,13 @@ export const gameReducer: GameReducer = (state, action) => {
         log: appendGameLog(state.log, events),
       }
 
-      return releasesFromJail && resumeJailMovement
-        ? gameReducer(settledState, { type: 'move-player' })
-        : settledState
+      if (releasesFromJail && resumeJailMovement) {
+        return gameReducer(settledState, { type: 'move-player' })
+      }
+      if (!settledState.debtResolution && debt.resumeAfterPlayerId) {
+        return resumeAfterBankruptcy(settledState, debt.resumeAfterPlayerId)
+      }
+      return settledState
     }
     case 'declare-bankruptcy':
       return declareBankruptcy(state)

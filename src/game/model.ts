@@ -27,7 +27,11 @@ export interface AuctionState {
   highBid: number
   highBidderId: PlayerId | null
   passedPlayerIds: PlayerId[]
-  bankruptcy?: { debtorId: PlayerId; remainingPropertyIds: string[] }
+  bankruptcy?: {
+    debtorId: PlayerId
+    remainingPropertyIds: string[]
+    resumeAfterPlayerId?: PlayerId
+  }
 }
 
 export type PaymentReason =
@@ -35,6 +39,7 @@ export type PaymentReason =
   | 'tax'
   | 'property-purchase'
   | 'unmortgage'
+  | 'mortgage-interest'
   | 'house-purchase'
   | 'hotel-purchase'
   | 'card'
@@ -54,6 +59,7 @@ export interface DebtResolutionState {
   amount: number
   reason: PaymentReason
   resumeJailMovement: boolean
+  resumeAfterPlayerId?: PlayerId
   remainingPayments?: PaymentObligation[]
 }
 
@@ -111,8 +117,15 @@ export type GameLogEvent =
   | { type: 'auction-ended'; propertyId: string; winnerId: PlayerId | null; amount: number }
   | { type: 'card-drawn'; playerId: PlayerId; deck: CardDeck; cardId: string }
   | { type: 'card-returned'; playerId: PlayerId; deck: CardDeck; cardId: string }
+  | {
+      type: 'card-transferred'
+      fromPlayerId: PlayerId
+      toPlayerId: PlayerId
+      deck: CardDeck
+      cardId: string
+    }
   | { type: 'turn-change'; fromPlayerId: PlayerId; toPlayerId: PlayerId }
-  | { type: 'bankruptcy'; playerId: PlayerId }
+  | { type: 'bankruptcy'; playerId: PlayerId; creditorId?: PlayerId | null }
 
 export interface GameLogEntry {
   id: string
