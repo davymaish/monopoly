@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canDeclareBankruptcyToBank } from '../game/bankruptcy'
+import { canDeclareBankruptcyToBank, canDeclareBankruptcyToPlayer } from '../game/bankruptcy'
 import { createInitialGameState } from '../game/initial-state'
 import type { GameState } from '../game/model'
 import { gameReducer } from '../game/reducer'
@@ -43,7 +43,7 @@ function createBankDebtState(withMortgageRemedy = false): GameState {
   }
 }
 
-describe('bankruptcy to the bank', () => {
+describe('bankruptcy resolution', () => {
   it('allows bankruptcy only after legal debt remedies are exhausted', () => {
     const exhausted = createBankDebtState()
     const mortgageAvailable = createBankDebtState(true)
@@ -55,8 +55,11 @@ describe('bankruptcy to the bank', () => {
     expect(canDeclareBankruptcyToBank(exhausted, 'player-1')).toBe(true)
     expect(canDeclareBankruptcyToBank(mortgageAvailable, 'player-1')).toBe(false)
     expect(canDeclareBankruptcyToBank(playerDebt, 'player-1')).toBe(false)
+    expect(canDeclareBankruptcyToPlayer(playerDebt, 'player-1')).toBe(true)
     expect(gameReducer(mortgageAvailable, { type: 'declare-bankruptcy' })).toBe(mortgageAvailable)
-    expect(gameReducer(playerDebt, { type: 'declare-bankruptcy' })).toBe(playerDebt)
+    expect(gameReducer(playerDebt, { type: 'declare-bankruptcy' }).bankruptPlayerIds).toEqual([
+      'player-1',
+    ])
   })
 
   it('liquidates buildings first, resets deeds and mortgages, and queues bank auctions in board order', () => {
@@ -117,6 +120,100 @@ describe('bankruptcy to the bank', () => {
     expect(finished.phase).toBe('awaiting-roll')
     expect(finished.debtResolution).toBeNull()
     expect(finished.bankruptPlayerIds).toEqual(['player-1'])
+  })
+
+  it('transfers cash, deeds, and Jail Free cards to a player creditor and charges mortgage interest', () => {
+    const bankDebt = createBankDebtState()
+    const playerDebt: GameState = {
+      ...bankDebt,
+      debtResolution: { ...bankDebt.debtResolution!, creditorId: 'player-2', reason: 'rent' },
+    }
+
+    expect(canDeclareBankruptcyToPlayer(playerDebt, 'player-1')).toBe(true)
+    expect(canDeclareBankruptcyToBank(playerDebt, 'player-1')).toBe(false)
+
+    const bankrupt = gameReducer(playerDebt, { type: 'declare-bankruptcy' })
+
+    expect(bankrupt.players[0]).toMatchObject({ cash: 0, getOutOfJailFreeCardCount: 0 })
+    expect(bankrupt.players[1]).toMatchObject({ cash: 1525, getOutOfJailFreeCardCount: 1 })
+    expect(bankrupt.bankruptPlayerIds).toEqual(['player-1'])
+    expect(bankrupt.ownership['mediterranean-avenue']).toBe('player-2')
+    expect(bankrupt.ownership['reading-railroad']).toBe('player-2')
+    expect(bankrupt.propertyBuildings['mediterranean-avenue']).toEqual({ houses: 0, hotels: 0 })
+    expect(bankrupt.mortgagedProperties).toEqual(['reading-railroad'])
+    expect(bankrupt.heldJailFreeCards).toEqual([
+      { deck: 'chance', cardId: 'chance-jail-free', playerId: 'player-2' },
+    ])
+    expect(bankrupt.decks.chance).not.toContain('chance-jail-free')
+    expect(bankrupt.auction).toBeNull()
+    expect(bankrupt.debtResolution).toBeNull()
+    expect(bankrupt.phase).toBe('awaiting-roll')
+    expect(bankrupt.currentPlayerIndex).toBe(1)
+    expect(bankrupt.log.some(({ event }) => event.type === 'card-transferred')).toBe(true)
+    expect(
+      bankrupt.log.some(
+        ({ event }) =>
+          event.type === 'payment' &&
+          event.reason === 'mortgage-interest' &&
+          event.amount === 10 &&
+          event.payerId === 'player-2' &&
+          event.payeeId === null,
+      ),
+    ).toBe(true)
+    expect(
+      bankrupt.log.some(
+        ({ event }) =>
+          event.type === 'bankruptcy' &&
+          event.playerId === 'player-1' &&
+          event.creditorId === 'player-2',
+      ),
+    ).toBe(true)
+  })
+
+  it('opens bank debt for the creditor interest shortfall and resumes after the original debtor', () => {
+    const bankDebt = createBankDebtState()
+    const playerDebt: GameState = {
+      ...bankDebt,
+      players: bankDebt.players.map((player) => ({ ...player, cash: 0 })),
+      ownership: { ...bankDebt.ownership, 'oriental-avenue': 'player-2' },
+      propertyBuildings: {
+        ...bankDebt.propertyBuildings,
+        'mediterranean-avenue': { houses: 0, hotels: 0 },
+      },
+      mortgagedProperties: ['mediterranean-avenue', 'reading-railroad'],
+      debtResolution: {
+        ...bankDebt.debtResolution!,
+        creditorId: 'player-2',
+        amount: 100,
+        reason: 'rent',
+      },
+    }
+
+    const bankrupt = gameReducer(playerDebt, { type: 'declare-bankruptcy' })
+    expect(bankrupt.debtResolution).toMatchObject({
+      debtorId: 'player-2',
+      creditorId: null,
+      amount: 13,
+      reason: 'mortgage-interest',
+      resumeAfterPlayerId: 'player-1',
+    })
+    expect(bankrupt.currentPlayerIndex).toBe(1)
+
+    const mortgaged = gameReducer(bankrupt, {
+      type: 'mortgage-property',
+      propertyId: 'oriental-avenue',
+    })
+    const settled = gameReducer(mortgaged, { type: 'pay-debt' })
+
+    expect(settled.players[1]?.cash).toBe(37)
+    expect(settled.debtResolution).toBeNull()
+    expect(settled.currentPlayerIndex).toBe(1)
+    expect(settled.phase).toBe('awaiting-roll')
+    expect(settled.log.at(-1)?.event).toEqual({
+      type: 'turn-change',
+      fromPlayerId: 'player-1',
+      toPlayerId: 'player-2',
+    })
   })
 
   it('rejects bankruptcy outside eligible bank debt and retains a playable turn without assets', () => {

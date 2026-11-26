@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { BOARD_SPACES } from '../game/board'
-import { canDeclareBankruptcyToBank } from '../game/bankruptcy'
+import { canDeclareBankruptcyToBank, canDeclareBankruptcyToPlayer } from '../game/bankruptcy'
 import { getCardDefinition, type CardDeck } from '../game/cards'
 import type { GameLogEvent, GameState, Player } from '../game/model'
 import RollDiceControl from './RollDiceControl'
@@ -91,10 +91,12 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
       const deckName = event.deck === 'chance' ? 'Chance' : 'Community Chest'
       return `${getPlayerName(players, event.playerId)} returned the card to the bottom of the ${deckName} deck.`
     }
+    case 'card-transferred':
+      return `${getPlayerName(players, event.fromPlayerId)} transferred a Get Out of Jail Free card to ${getPlayerName(players, event.toPlayerId)}.`
     case 'turn-change':
       return `${getPlayerName(players, event.fromPlayerId)} ended their turn. ${getPlayerName(players, event.toPlayerId)} is up next.`
     case 'bankruptcy':
-      return `${getPlayerName(players, event.playerId)} went bankrupt to the bank.`
+      return `${getPlayerName(players, event.playerId)} went bankrupt to ${event.creditorId ? getPlayerName(players, event.creditorId) : 'the bank'}.`
   }
 }
 
@@ -137,9 +139,9 @@ export default function TurnSummary({
     ? (gameState.players.find((player) => player.id === debt.creditorId)?.name ?? 'another player')
     : 'the bank'
   const canDeclareBankruptcy =
-    debt?.creditorId === null &&
     debtor !== undefined &&
-    canDeclareBankruptcyToBank(gameState, debtor.id)
+    (canDeclareBankruptcyToBank(gameState, debtor.id) ||
+      canDeclareBankruptcyToPlayer(gameState, debtor.id))
   const canUseJailFreeCardForDebt =
     debt?.reason === 'jail-bail' && (debtor?.getOutOfJailFreeCardCount ?? 0) > 0
 
@@ -222,7 +224,9 @@ export default function TurnSummary({
           </p>
           {canDeclareBankruptcy && (
             <button className="turn-action-button" onClick={onDeclareBankruptcy} type="button">
-              Declare bankruptcy to the bank
+              {debt.creditorId === null
+                ? 'Declare bankruptcy to the bank'
+                : `Declare bankruptcy to ${creditor}`}
             </button>
           )}
           {debtor.cash >= debt.amount && (

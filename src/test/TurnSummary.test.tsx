@@ -280,6 +280,60 @@ describe('TurnSummary', () => {
     expect(screen.queryByRole('button', { name: 'End turn' })).not.toBeInTheDocument()
   })
 
+  it('offers bankruptcy to a player creditor and names them in the activity log', () => {
+    const initialState = createInitialGameState(setup)
+    const gameState = {
+      ...initialState,
+      players: initialState.players.map((player, index) =>
+        index === 0 ? { ...player, cash: 10 } : player,
+      ),
+      ownership: {
+        ...initialState.ownership,
+        'mediterranean-avenue': 'player-1',
+        'reading-railroad': 'player-1',
+      },
+      propertyBuildings: {
+        ...initialState.propertyBuildings,
+        'mediterranean-avenue': { houses: 1, hotels: 0 },
+      },
+      mortgagedProperties: ['reading-railroad'],
+      debtResolution: {
+        debtorId: 'player-1',
+        creditorId: 'player-2',
+        amount: 100,
+        reason: 'rent' as const,
+        resumeJailMovement: false,
+      },
+      phase: 'awaiting-player-action' as const,
+      log: [
+        {
+          id: 'log-bankruptcy',
+          event: { type: 'bankruptcy' as const, playerId: 'player-1', creditorId: 'player-2' },
+        },
+      ],
+    }
+    const onDeclareBankruptcy = vi.fn()
+
+    render(
+      <TurnSummary
+        gameState={gameState}
+        onRollDice={() => {}}
+        onDeclareBankruptcy={onDeclareBankruptcy}
+        onMovePlayer={() => {}}
+        onEndTurn={() => {}}
+        onDrawCard={() => {}}
+        onCompleteCard={() => {}}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Alex owes $100 to Jordan for rent. Available cash: $10. No legal building sales or mortgages remain.',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Declare bankruptcy to Jordan' }))
+    expect(onDeclareBankruptcy).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Alex went bankrupt to Jordan.')).toBeInTheDocument()
+  })
+
   it('offers bank bankruptcy only after no legal remedies remain', () => {
     const initialState = createInitialGameState(setup)
     const gameState = {
