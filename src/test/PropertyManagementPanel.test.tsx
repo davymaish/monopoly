@@ -139,6 +139,38 @@ describe('PropertyManagementPanel', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('shows only the debtor’s legal sale and mortgage remedies while debt is pending', () => {
+    const initialState = createState()
+    const gameState: GameState = {
+      ...initialState,
+      ownership: { ...initialState.ownership, 'reading-railroad': 'player-2' },
+      debtResolution: {
+        debtorId: 'player-2',
+        creditorId: 'player-1',
+        amount: 100,
+        reason: 'rent',
+        resumeJailMovement: false,
+      },
+      phase: 'awaiting-player-action',
+    }
+    const onAction = vi.fn()
+
+    render(<PropertyManagementPanel gameState={gameState} onAction={onAction} />)
+
+    const properties = screen.getByRole('list', { name: "Jordan's owned properties" })
+    fireEvent.click(
+      within(properties).getByRole('button', { name: 'Mortgage Reading Railroad for $100' }),
+    )
+    expect(onAction).toHaveBeenCalledWith({
+      type: 'mortgage-property',
+      propertyId: 'reading-railroad',
+    })
+    expect(within(properties).queryByRole('button', { name: /Unmortgage/ })).not.toBeInTheDocument()
+    expect(
+      within(properties).queryByRole('button', { name: /Build house/ }),
+    ).not.toBeInTheDocument()
+  })
+
   it('hides all management actions outside a permitted player-action phase', () => {
     const initialState = createState()
     const gameState: GameState = {

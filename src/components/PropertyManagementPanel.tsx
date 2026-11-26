@@ -35,11 +35,14 @@ export default function PropertyManagementPanel({
   gameState,
   onAction,
 }: PropertyManagementPanelProps): ReactElement {
-  const currentPlayer = gameState.players[gameState.currentPlayerIndex]
+  const currentPlayer = gameState.debtResolution
+    ? gameState.players.find((player) => player.id === gameState.debtResolution?.debtorId)
+    : gameState.players[gameState.currentPlayerIndex]
+  const isResolvingDebt = gameState.debtResolution !== null
   const canManageProperties =
     (gameState.phase === 'awaiting-roll' || gameState.phase === 'awaiting-player-action') &&
     gameState.pendingCard === null &&
-    gameState.debtResolution === null
+    (!isResolvingDebt || gameState.phase === 'awaiting-player-action')
   const housesInUse = Object.values(gameState.propertyBuildings).reduce(
     (total, buildings) => total + buildings.houses,
     0,
@@ -102,6 +105,7 @@ export default function PropertyManagementPanel({
               ? getBuildingSaleEligibility(buildingInput)
               : { eligible: false, reason: 'not-a-street' as const }
             const canBuildHouse =
+              !isResolvingDebt &&
               canManageProperties &&
               street !== undefined &&
               buildings !== undefined &&
@@ -111,6 +115,7 @@ export default function PropertyManagementPanel({
               housesInUse < TOTAL_HOUSE_SUPPLY &&
               currentPlayer.cash >= street.houseCost
             const canBuildHotel =
+              !isResolvingDebt &&
               canManageProperties &&
               street !== undefined &&
               buildings !== undefined &&
@@ -126,7 +131,10 @@ export default function PropertyManagementPanel({
             const canMortgage = canManageProperties && !isMortgaged && !groupHasBuildings
             const redemptionAmount = deed.mortgageValue + Math.ceil(deed.mortgageValue / 10)
             const canUnmortgage =
-              canManageProperties && isMortgaged && currentPlayer.cash >= redemptionAmount
+              !isResolvingDebt &&
+              canManageProperties &&
+              isMortgaged &&
+              currentPlayer.cash >= redemptionAmount
             const propertyCategory =
               space.kind === 'property'
                 ? `${PROPERTY_GROUPS[space.group].label} street`

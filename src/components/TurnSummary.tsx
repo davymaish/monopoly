@@ -9,6 +9,7 @@ interface TurnSummaryProps {
   onRollDice: () => void
   onRollJailAttempt?: () => void
   onPayJailBail?: () => void
+  onPayDebt?: () => void
   onUseJailFreeCard?: () => void
   onMovePlayer: () => void
   onEndTurn: () => void
@@ -91,6 +92,7 @@ export default function TurnSummary({
   onRollDice,
   onRollJailAttempt = () => {},
   onPayJailBail = () => {},
+  onPayDebt = () => {},
   onUseJailFreeCard = () => {},
   onMovePlayer,
   onEndTurn,
@@ -117,6 +119,11 @@ export default function TurnSummary({
   const pendingCardDefinition = gameState.pendingCard
     ? getCardDefinition(gameState.pendingCard.deck, gameState.pendingCard.cardId)
     : undefined
+  const debt = gameState.debtResolution
+  const debtor = debt ? gameState.players.find((player) => player.id === debt.debtorId) : undefined
+  const creditor = debt?.creditorId
+    ? (gameState.players.find((player) => player.id === debt.creditorId)?.name ?? 'another player')
+    : 'the bank'
 
   return (
     <section className="turn-summary" aria-labelledby="turn-summary-heading">
@@ -132,9 +139,6 @@ export default function TurnSummary({
           </p>
           {gameState.debtResolution ? (
             <>
-              <p role="status">
-                The $50 bail exceeds available cash. Resolve this debt before taking another action.
-              </p>
               {currentPlayer.getOutOfJailFreeCardCount > 0 && (
                 <button className="turn-action-button" onClick={onUseJailFreeCard} type="button">
                   Use Get Out of Jail Free card
@@ -173,6 +177,7 @@ export default function TurnSummary({
                 </button>
               )}
               {gameState.phase === 'awaiting-player-action' &&
+                !gameState.debtResolution &&
                 gameState.dice !== null &&
                 gameState.dice[0] !== gameState.dice[1] && (
                   <p role="status">No doubles; remain in Jail and end your turn.</p>
@@ -180,8 +185,25 @@ export default function TurnSummary({
             </>
           )}
         </section>
-      ) : (
+      ) : debt ? null : (
         <RollDiceControl onRollDice={onRollDice} phase={gameState.phase} />
+      )}
+      {debt && debtor && (
+        <section className="turn-summary-status" aria-label="Debt resolution">
+          <h4>Debt resolution</h4>
+          <p role="status">
+            {debtor.name} owes {formatCash(debt.amount)} to {creditor} for{' '}
+            {debt.reason.replace(/-/g, ' ')}. Available cash: {formatCash(debtor.cash)}.
+            {debtor.cash < debt.amount
+              ? ' Sell buildings or mortgage eligible properties before paying.'
+              : ' Pay this debt to continue.'}
+          </p>
+          {debtor.cash >= debt.amount && (
+            <button className="turn-action-button" onClick={onPayDebt} type="button">
+              Pay {formatCash(debt.amount)} debt
+            </button>
+          )}
+        </section>
       )}
       {gameState.phase === 'awaiting-player-action' && gameState.extraRollAvailable && (
         <p className="turn-summary-status" role="status">
