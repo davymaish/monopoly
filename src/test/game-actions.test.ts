@@ -9,6 +9,7 @@ describe('game action contract', () => {
       | { type: 'roll-jail-attempt'; dice: DiceRoll }
       | { type: 'pay-jail-bail' }
       | { type: 'pay-debt' }
+      | { type: 'declare-bankruptcy' }
       | { type: 'use-jail-free-card' }
       | { type: 'move-player' }
       | { type: 'end-turn' }

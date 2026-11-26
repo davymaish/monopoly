@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { BOARD_SPACES } from '../game/board'
+import { canDeclareBankruptcyToBank } from '../game/bankruptcy'
 import { getCardDefinition, type CardDeck } from '../game/cards'
 import type { GameLogEvent, GameState, Player } from '../game/model'
 import RollDiceControl from './RollDiceControl'
@@ -10,6 +11,7 @@ interface TurnSummaryProps {
   onRollJailAttempt?: () => void
   onPayJailBail?: () => void
   onPayDebt?: () => void
+  onDeclareBankruptcy?: () => void
   onUseJailFreeCard?: () => void
   onMovePlayer: () => void
   onEndTurn: () => void
@@ -53,9 +55,16 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
         ? `${getPlayerName(players, event.playerId)} used a Get Out of Jail Free card.`
         : `${getPlayerName(players, event.playerId)} rolled doubles and was released from Jail.`
     case 'income':
-      return event.reason === 'go-salary'
-        ? `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} in GO salary.`
-        : `${getPlayerName(players, event.playerId)} collected ${formatCash(event.amount)} from a card.`
+      if (event.reason === 'go-salary') {
+        return `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} in GO salary.`
+      }
+      if (event.reason === 'building-sale') {
+        return `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} for sold buildings.`
+      }
+      if (event.reason === 'mortgage') {
+        return `${getPlayerName(players, event.playerId)} received ${formatCash(event.amount)} from a mortgage.`
+      }
+      return `${getPlayerName(players, event.playerId)} collected ${formatCash(event.amount)} from a card.`
     case 'payment': {
       const payee = event.payeeId ? getPlayerName(players, event.payeeId) : 'the bank'
       const reason = event.reason.replace(/-/g, ' ')
@@ -84,6 +93,8 @@ function describeEvent(event: GameLogEvent, players: Player[]): string {
     }
     case 'turn-change':
       return `${getPlayerName(players, event.fromPlayerId)} ended their turn. ${getPlayerName(players, event.toPlayerId)} is up next.`
+    case 'bankruptcy':
+      return `${getPlayerName(players, event.playerId)} went bankrupt to the bank.`
   }
 }
 
@@ -93,6 +104,7 @@ export default function TurnSummary({
   onRollJailAttempt = () => {},
   onPayJailBail = () => {},
   onPayDebt = () => {},
+  onDeclareBankruptcy = () => {},
   onUseJailFreeCard = () => {},
   onMovePlayer,
   onEndTurn,
@@ -124,6 +136,12 @@ export default function TurnSummary({
   const creditor = debt?.creditorId
     ? (gameState.players.find((player) => player.id === debt.creditorId)?.name ?? 'another player')
     : 'the bank'
+  const canDeclareBankruptcy =
+    debt?.creditorId === null &&
+    debtor !== undefined &&
+    canDeclareBankruptcyToBank(gameState, debtor.id)
+  const canUseJailFreeCardForDebt =
+    debt?.reason === 'jail-bail' && (debtor?.getOutOfJailFreeCardCount ?? 0) > 0
 
   return (
     <section className="turn-summary" aria-labelledby="turn-summary-heading">
@@ -195,9 +213,18 @@ export default function TurnSummary({
             {debtor.name} owes {formatCash(debt.amount)} to {creditor} for{' '}
             {debt.reason.replace(/-/g, ' ')}. Available cash: {formatCash(debtor.cash)}.
             {debtor.cash < debt.amount
-              ? ' Sell buildings or mortgage eligible properties before paying.'
+              ? canUseJailFreeCardForDebt
+                ? ' Use a Get Out of Jail Free card or sell buildings and mortgage eligible properties before paying.'
+                : canDeclareBankruptcy
+                  ? ' No legal building sales or mortgages remain.'
+                  : ' Sell buildings or mortgage eligible properties before paying.'
               : ' Pay this debt to continue.'}
           </p>
+          {canDeclareBankruptcy && (
+            <button className="turn-action-button" onClick={onDeclareBankruptcy} type="button">
+              Declare bankruptcy to the bank
+            </button>
+          )}
           {debtor.cash >= debt.amount && (
             <button className="turn-action-button" onClick={onPayDebt} type="button">
               Pay {formatCash(debt.amount)} debt

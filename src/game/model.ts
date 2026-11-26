@@ -27,6 +27,7 @@ export interface AuctionState {
   highBid: number
   highBidderId: PlayerId | null
   passedPlayerIds: PlayerId[]
+  bankruptcy?: { debtorId: PlayerId; remainingPropertyIds: string[] }
 }
 
 export type PaymentReason =
@@ -38,6 +39,7 @@ export type PaymentReason =
   | 'hotel-purchase'
   | 'card'
   | 'jail-bail'
+  | 'bankruptcy'
 
 export interface PaymentObligation {
   debtorId: PlayerId
@@ -110,6 +112,7 @@ export type GameLogEvent =
   | { type: 'card-drawn'; playerId: PlayerId; deck: CardDeck; cardId: string }
   | { type: 'card-returned'; playerId: PlayerId; deck: CardDeck; cardId: string }
   | { type: 'turn-change'; fromPlayerId: PlayerId; toPlayerId: PlayerId }
+  | { type: 'bankruptcy'; playerId: PlayerId }
 
 export interface GameLogEntry {
   id: string
@@ -176,6 +179,7 @@ export interface GameState {
   decks: CardDeckState
   pendingCard: DrawnCard | null
   heldJailFreeCards: HeldJailFreeCard[]
+  bankruptPlayerIds: PlayerId[]
   doublesCount: number
   extraRollAvailable: boolean
   jailAttemptInProgress: boolean

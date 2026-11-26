@@ -196,6 +196,7 @@ export default function App(): ReactElement {
               onRollJailAttempt={handleRollJailAttempt}
               onPayJailBail={handlePayJailBail}
               onPayDebt={handlePayDebt}
+              onDeclareBankruptcy={() => handlePropertyAction({ type: 'declare-bankruptcy' })}
               onUseJailFreeCard={handleUseJailFreeCard}
               onMovePlayer={handleMovePlayer}
               onEndTurn={handleEndTurn}

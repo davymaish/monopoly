@@ -27,6 +27,9 @@ export default function AuctionPrompt({
   const highBidder = auction.highBidderId
     ? gameState.players.find((player) => player.id === auction.highBidderId)
     : undefined
+  const bankruptPlayer = auction.bankruptcy
+    ? gameState.players.find((player) => player.id === auction.bankruptcy?.debtorId)
+    : undefined
 
   if (!deed || !activeBidder) {
     return (
@@ -44,8 +47,11 @@ export default function AuctionPrompt({
 
   return (
     <section className="purchase-prompt" aria-labelledby="auction-prompt-heading">
-      <h3 id="auction-prompt-heading">Property auction</h3>
+      <h3 id="auction-prompt-heading">
+        {auction.bankruptcy ? 'Bankruptcy auction' : 'Property auction'}
+      </h3>
       <p>
+        {bankruptPlayer ? `${bankruptPlayer.name} went bankrupt. ` : ''}
         <strong>{deed.name}</strong> is being auctioned.
       </p>
       <p>

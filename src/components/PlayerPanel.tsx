@@ -18,7 +18,8 @@ export default function PlayerPanel({ gameState }: PlayerPanelProps): ReactEleme
       <h2 id="player-panel-heading">Players</h2>
       <ul className="player-panel-list">
         {gameState.players.map((player, index) => {
-          const isCurrentPlayer = index === gameState.currentPlayerIndex
+          const isBankrupt = gameState.bankruptPlayerIds.includes(player.id)
+          const isCurrentPlayer = index === gameState.currentPlayerIndex && !isBankrupt
           const color = PLAYER_TOKEN_COLORS.find((option) => option.id === player.color)
 
           return (
@@ -40,7 +41,7 @@ export default function PlayerPanel({ gameState }: PlayerPanelProps): ReactEleme
                   <strong>{currencyFormatter.format(player.cash)}</strong>
                 </p>
                 <span className="player-panel-turn">
-                  {isCurrentPlayer ? 'Current turn' : 'Waiting'}
+                  {isBankrupt ? 'Bankrupt' : isCurrentPlayer ? 'Current turn' : 'Waiting'}
                 </span>
               </div>
             </li>
